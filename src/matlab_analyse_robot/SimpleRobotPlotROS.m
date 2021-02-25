@@ -1,6 +1,6 @@
 function [Out] = SimpleRobotPlotROS(u)
     %SIMPLEROBOTPLOT Summary of this function goes here
-    persistent jointpub jointmsg counter tftree tfStampedMsg tfStampedMsg1 tfStampedMsg2 tfStampedMsg3
+    persistent jointpub jointmsg counter tftree tfStampedMsg tfStampedMsg1 tfStampedMsg2 tfStampedMsg3 tfStampedMsg4 tfStampedMsg5 tfStampedMsg6
     % persistent  tfStampedMsgcm1 tfStampedMsgcm2 tfStampedMsgcm3
 
     %% Input parameters
@@ -14,8 +14,9 @@ function [Out] = SimpleRobotPlotROS(u)
     q6 = Q_param(6);
     %Joint Position Vector
     Q = [q1 q2 q3 q4 q5 q6]';
-    
-    Q_param = u(length(Q_param)+1:length(Q_param)+6);
+
+    p_offset = length(Q_param);
+    Qp_param = u((1:6) + p_offset);
     %Joint Velocity
     qp1 = Qp_param(1);
     qp2 = Qp_param(2);
@@ -27,14 +28,21 @@ function [Out] = SimpleRobotPlotROS(u)
     Qp = [qp1 qp2 qp3 qp4 qp5 qp6]';
 
     % Robot Parameters
-    robot_param = u(7:44);
-    L_param = robot_param(1:10);
-    m_param = robot_param(11:13);
-    I_param = robot_param(14:31);
-    b_param = robot_param(32:34);
+    p_offset = p_offset + length(Qp_param);
+    L_size = 15;
+    m_size = 6;
+    I_size = 6 * 6;
+    b_size = 6;
+    robot_param_size = L_size + m_size + I_size + b_size + 3 + 1;
+    robot_param = u(p_offset + (1:(robot_param_size)));
 
-    g_vec_param = robot_param(35:37);
-    g_param = robot_param(38);
+    L_param = robot_param(1:L_size);
+    m_param = robot_param((1:m_size) + L_size);
+    I_param = robot_param((1:I_size) + L_size + m_size);
+    b_param = robot_param((1:b_size) + L_size + m_size + I_size));
+
+    g_vec_param = robot_param(end-4:end-1);
+    g_param = robot_param(end);
 
     L1 = L_param(1);
     L2 = L_param(2);
@@ -46,10 +54,18 @@ function [Out] = SimpleRobotPlotROS(u)
     L5 = L_param(8);
     L8 = L_param(9);
     L10 = L_param(10);
+    L11 = L_param(11);
+    L12 = L_param(12);
+    L13 = L_param(13);
+    L14 = L_param(14);
+    L15 = L_param(15);
 
     m1 = m_param(1);
     m2 = m_param(2);
     m3 = m_param(3);
+    m4 = m_param(4);
+    m5 = m_param(5);
+    m6 = m_param(6);
 
     I1_param = I_param(1:6);
     I111 = I1_param(1);
@@ -59,7 +75,7 @@ function [Out] = SimpleRobotPlotROS(u)
     I123 = I1_param(5);
     I133 = I1_param(6);
 
-    I2_param = I_param(7:12);
+    I2_param = I_param((1:6)+6);
     I211 = I2_param(1);
     I212 = I2_param(2);
     I213 = I2_param(3);
@@ -67,7 +83,7 @@ function [Out] = SimpleRobotPlotROS(u)
     I223 = I2_param(5);
     I233 = I2_param(6);
 
-    I3_param = I_param(13:18);
+    I3_param = I_param((1:6)+6*2);
     I311 = I3_param(1);
     I312 = I3_param(2);
     I313 = I3_param(3);
@@ -75,18 +91,46 @@ function [Out] = SimpleRobotPlotROS(u)
     I323 = I3_param(5);
     I333 = I3_param(6);
 
+    I4_param = I_param((1:6)+6*3);
+    I411 = I4_param(1);
+    I412 = I4_param(2);
+    I413 = I4_param(3);
+    I422 = I4_param(4);
+    I423 = I4_param(5);
+    I433 = I4_param(6);
+
+    I5_param = I_param((1:6)+6*4);
+    I511 = I5_param(1);
+    I512 = I5_param(2);
+    I513 = I5_param(3);
+    I522 = I5_param(4);
+    I523 = I5_param(5);
+    I533 = I5_param(6);
+
+    I6_param = I_param((1:6)+6*5);
+    I611 = I6_param(1);
+    I612 = I6_param(2);
+    I613 = I6_param(3);
+    I622 = I6_param(4);
+    I623 = I6_param(5);
+    I633 = I6_param(6);
+
     Beta(1, 1) = b_param(1);
     Beta(2, 2) = b_param(2);
     Beta(3, 3) = b_param(3);
+    Beta(4, 4) = b_param(4);
+    Beta(5, 5) = b_param(5);
+    Beta(6, 6) = b_param(6);
 
     gx = g_vec_param(1);
     gy = g_vec_param(2);
     gz = g_vec_param(3);
     g = g_param;
-    
-    Tao = u(45:47);
+
+    p_offset = p_offset + robot_param_size
+    Tao = u(p_offset+(1:3));
     %Time
-    t = u(48);
+    t = u(p_offset+4);
 
     %% Homogenous Transformations
     % Specify the Robot Base (with respect to the world coordinate frame in ROS)
