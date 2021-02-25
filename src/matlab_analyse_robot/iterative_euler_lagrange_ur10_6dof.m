@@ -80,46 +80,33 @@ T0_W = rotm_trvec2tf(RotX(spi / 2), [0; 0; 0]);
 %% Differential Kinematics
 [jacobi_abs_stack, Ji_0_stack, Jcmi_0_stack] = DiffKinematics(H_abs_stack, 'rrrrrr');
 
-Jcmi_vi_stack(:, :, 1) = expand(Jcmi_0_stack(1:3, :, 1));
-Jcmi_vi_stack(:, :, 2) = expand(Jcmi_0_stack(1:3, :, 2));
-Jcmi_vi_stack(:, :, 3) = expand(Jcmi_0_stack(1:3, :, 3));
-Jcmi_vi_stack(:, :, 4) = expand(Jcmi_0_stack(1:3, :, 4));
-Jcmi_vi_stack(:, :, 5) = expand(Jcmi_0_stack(1:3, :, 5));
-Jcmi_vi_stack(:, :, 6) = expand(Jcmi_0_stack(1:3, :, 6));
-
-Jcmi_wi_stack(:, :, 1) = expand(Jcmi_0_stack(4:6, :, 1));
-Jcmi_wi_stack(:, :, 2) = expand(Jcmi_0_stack(4:6, :, 2));
-Jcmi_wi_stack(:, :, 3) = expand(Jcmi_0_stack(4:6, :, 3));
-Jcmi_wi_stack(:, :, 4) = expand(Jcmi_0_stack(4:6, :, 4));
-Jcmi_wi_stack(:, :, 5) = expand(Jcmi_0_stack(4:6, :, 5));
-Jcmi_wi_stack(:, :, 6) = expand(Jcmi_0_stack(4:6, :, 6));
+for idx = 1:length(mi)
+    Jcmi_vi_stack(:, :, idx) = expand(Jcmi_0_stack(1:3, :, idx));
+    Jcmi_wi_stack(:, :, idx) = expand(Jcmi_0_stack(4:6, :, idx));
+end
 
 Jef_0 = Ji_0_stack(:, :, end);
-
 Jef_0_str = char(simplify(Jef_0));
+
 %% M,C,G calculation
 
 % precalculation
-Rcmi_0_stack(:, :, 1) = expand(tf2rotm(Tcmi_0_stack(:, :, 1)));
-Rcmi_0_stack(:, :, 2) = expand(tf2rotm(Tcmi_0_stack(:, :, 2)));
-Rcmi_0_stack(:, :, 3) = expand(tf2rotm(Tcmi_0_stack(:, :, 3)));
-Rcmi_0_stack(:, :, 4) = expand(tf2rotm(Tcmi_0_stack(:, :, 4)));
-Rcmi_0_stack(:, :, 5) = expand(tf2rotm(Tcmi_0_stack(:, :, 5)));
-Rcmi_0_stack(:, :, 6) = expand(tf2rotm(Tcmi_0_stack(:, :, 6)));
+for idx = 1:length(mi)
+    Rcmi_0_stack(:, :, idx) = expand(tf2rotm(Tcmi_0_stack(:, :, idx)));
+    xcmi_0(:, idx) = tf2trvec(Tcmi_0_stack(:, :, idx));
+end
 
 % Complete Gravitational Torques Vector (symbolic form)
-G = sym(zeros(3, 1));
+G = sym(zeros(length(qi), 1));
 
 P = sym(0);
 
 for idx = 1:length(mi)
-    xcmi_0(:, idx) = tf2trvec(Tcmi_0_stack(:, :, idx));
-
     hi = xcmi_0(:, idx)' * g_axis;
     P = P + mi(idx) * g * hi;
 end
 
-for kdx = 1:3
+for kdx = 1:length(qi)
     pPqk = simplify(diff(P, qi(kdx)));
     G(kdx) = pPqk;
 end
@@ -128,9 +115,9 @@ G = simplify(expand(G))
 G_str = char(simplify(G));
 
 % Complete the Inertia Matrix (symbolic form)
-M = sym(zeros(3));
+M = sym(zeros(length(mi)));
 
-for idx = 1:3
+for idx = 1:length(mi)
     M_cmi_vi = mi(idx) * Jcmi_vi_stack(:, :, idx)' * Jcmi_vi_stack(:, :, idx);
 
     Ii_0 = Rcmi_0_stack(:, :, idx) * Ii(:, :, idx) * Rcmi_0_stack(:, :, idx)';
@@ -140,19 +127,18 @@ for idx = 1:3
     M = M + Mi;
 end
 
-M = simplify(M)
+% M = simplify(M)
 % M = expand(M)
 
 %Complete Centripetal and Coriolis Matrix (symbolic form)
-C = sym(zeros(3));
+C = sym(zeros(length(qi)));
+M = expand(M);
 
-% M = expand(M);
+for kdx = 1:length(qi)
 
-for kdx = 1:3
+    for jdx = 1:length(qi)
 
-    for jdx = 1:3
-
-        for idx = 1:3
+        for idx = 1:length(qi)
             %             pM_kj_qi = simplify(diff(M(kdx,jdx), qi(idx)));
             pM_kj_qi = expand(diff(M(kdx, jdx), qi(idx)));
             %             pM_ki_qj = simplify(diff(M(kdx,idx), qi(jdx)));
@@ -163,20 +149,19 @@ for kdx = 1:3
             C(kdx, jdx) = C(kdx, jdx) + (1/2) * (pM_kj_qi + pM_ki_qj - pM_ij_qk) * qip(idx);
         end
 
-        % here multiply 1/2
+        % or here multiply 1/2
     end
 
 end
 
-C = simplify(C)
-
-M = expand(M);
+% C = simplify(C)
+% M = expand(M);
 C = expand(C);
 
 % the DM-2*C must be skewsymmetric
 DM = zeros(size(M));
 
-for idx = 1:3
+for idx = 1:length(qi)
     DM = DM + diff(M, qi(idx)) * qip(idx);
 end
 
@@ -189,16 +174,16 @@ N = simplify(expand(N));
 M = simplify(expand(M));
 
 if isSym(M)
-    disp("M matrix is symmetric");
-    end% ok
+    disp("M matrix is symmetric"); % ok
+end
 
-    if isSkewSym(N)
-        disp("N matrix is skew symmetric");
-        end% ok
+if isSkewSym(N)
+    disp("N matrix is skew symmetric"); % ok
+end
 
-        M_char = char(simplify(expand(M)));
-        C_char = char(simplify(expand(C)));
-        G_char = char(simplify(expand(G)));
+M_char = char(simplify(expand(M)));
+C_char = char(simplify(expand(C)));
+G_char = char(simplify(expand(G)));
 
         Tef_W = T0_W * Ti_0_stack(:, :, end);
 
