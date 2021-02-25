@@ -138,16 +138,23 @@ function [Out] = SimpleRobotPlotROS(u)
 
     % Compute the Homogeneous Transformations
     T1_0 = [cos(q1), 0, sin(q1), 0; sin(q1), 0, -cos(q1), 0; 0, 1, 0, L1; 0, 0, 0, 1];
-    T2_0 = [-cos(q1) * sin(q2), -cos(q1) * cos(q2), sin(q1), -L3 * cos(q1) * sin(q2); -sin(q1) * sin(q2), -cos(q2) * sin(q1), -cos(q1), -L3 * sin(q1) * sin(q2); cos(q2), -sin(q2), 0, L1 + L3 * cos(q2); 0, 0, 0, 1];
-    T3_0 = [-sin(q2 + q3) * cos(q1), -cos(q2 + q3) * cos(q1), sin(q1), L2 * sin(q1) + L4 * sin(q1) - L3 * cos(q1) * sin(q2) - L5 * cos(q1) * cos(q2) * sin(q3) - L5 * cos(q1) * cos(q3) * sin(q2); -sin(q2 + q3) * sin(q1), -cos(q2 + q3) * sin(q1), -cos(q1), - L2 * cos(q1) - L4 * cos(q1) - L3 * sin(q1) * sin(q2) - L5 * cos(q2) * sin(q1) * sin(q3) - L5 * cos(q3) * sin(q1) * sin(q2); cos(q2 + q3), -sin(q2 + q3), 0, L1 + L5 * cos(q2 + q3) + L3 * cos(q2); 0, 0, 0, 1];
+    T2_0 = [-cos(q1)*sin(q2), -cos(q1)*cos(q2), sin(q1), -L3*cos(q1)*sin(q2); -sin(q1)*sin(q2), -cos(q2)*sin(q1), -cos(q1), -L3*sin(q1)*sin(q2); cos(q2), -sin(q2), 0, L1 + L3*cos(q2); 0, 0, 0, 1];
+    T3_0 = [-sin(q2 + q3)*cos(q1), -cos(q2 + q3)*cos(q1), sin(q1), -cos(q1)*(L5*sin(q2 + q3) + L3*sin(q2)); -sin(q2 + q3)*sin(q1), -cos(q2 + q3)*sin(q1), -cos(q1), -sin(q1)*(L5*sin(q2 + q3) + L3*sin(q2)); cos(q2 + q3), -sin(q2 + q3), 0, L1 + L5*cos(q2 + q3) + L3*cos(q2); 0, 0, 0, 1];
+    T4_0 = [- cos(q1 + q2 + q3 + q4)/2 - cos(q2 - q1 + q3 + q4)/2, sin(q1), - sin(q1 + q2 + q3 + q4)/2 - sin(q2 - q1 + q3 + q4)/2, L2*sin(q1) - L3*cos(q1)*sin(q2) - L5*cos(q1)*cos(q2)*sin(q3) - L5*cos(q1)*cos(q3)*sin(q2); sin(q2 - q1 + q3 + q4)/2 - sin(q1 + q2 + q3 + q4)/2, -cos(q1), cos(q1 + q2 + q3 + q4)/2 - cos(q2 - q1 + q3 + q4)/2, - L2*cos(q1) - L3*sin(q1)*sin(q2) - L5*cos(q2)*sin(q1)*sin(q3) - L5*cos(q3)*sin(q1)*sin(q2); -sin(q2 + q3 + q4), 0, cos(q2 + q3 + q4), L1 + L5*cos(q2 + q3) + L3*cos(q2); 0, 0, 0, 1];
+    T5_0 = [sin(q1)*sin(q5) - cos(q1)*cos(q2)*cos(q3)*cos(q4)*cos(q5) + cos(q1)*cos(q2)*cos(q5)*sin(q3)*sin(q4) + cos(q1)*cos(q3)*cos(q5)*sin(q2)*sin(q4) + cos(q1)*cos(q4)*cos(q5)*sin(q2)*sin(q3), sin(q1 + q2 + q3 + q4)/2 + sin(q2 - q1 + q3 + q4)/2, cos(q5)*sin(q1) + cos(q1)*cos(q2)*cos(q3)*cos(q4)*sin(q5) - cos(q1)*cos(q2)*sin(q3)*sin(q4)*sin(q5) - cos(q1)*cos(q3)*sin(q2)*sin(q4)*sin(q5) - cos(q1)*cos(q4)*sin(q2)*sin(q3)*sin(q5), L2*sin(q1) - L3*cos(q1)*sin(q2) - L5*cos(q1)*cos(q2)*sin(q3) - L5*cos(q1)*cos(q3)*sin(q2) - L6*cos(q1)*cos(q2)*cos(q3)*sin(q4) - L6*cos(q1)*cos(q2)*cos(q4)*sin(q3) - L6*cos(q1)*cos(q3)*cos(q4)*sin(q2) + L6*cos(q1)*sin(q2)*sin(q3)*sin(q4); cos(q2)*cos(q5)*sin(q1)*sin(q3)*sin(q4) - cos(q2)*cos(q3)*cos(q4)*cos(q5)*sin(q1) - cos(q1)*sin(q5) + cos(q3)*cos(q5)*sin(q1)*sin(q2)*sin(q4) + cos(q4)*cos(q5)*sin(q1)*sin(q2)*sin(q3), cos(q2 - q1 + q3 + q4)/2 - cos(q1 + q2 + q3 + q4)/2, cos(q2)*cos(q3)*cos(q4)*sin(q1)*sin(q5) - cos(q1)*cos(q5) - cos(q2)*sin(q1)*sin(q3)*sin(q4)*sin(q5) - cos(q3)*sin(q1)*sin(q2)*sin(q4)*sin(q5) - cos(q4)*sin(q1)*sin(q2)*sin(q3)*sin(q5), L6*sin(q1)*sin(q2)*sin(q3)*sin(q4) - L3*sin(q1)*sin(q2) - L5*cos(q2)*sin(q1)*sin(q3) - L5*cos(q3)*sin(q1)*sin(q2) - L6*cos(q2)*cos(q3)*sin(q1)*sin(q4) - L6*cos(q2)*cos(q4)*sin(q1)*sin(q3) - L6*cos(q3)*cos(q4)*sin(q1)*sin(q2) - L2*cos(q1); - sin(q2 + q3 + q4 + q5)/2 - sin(q2 + q3 + q4 - q5)/2, -cos(q2 + q3 + q4), cos(q2 + q3 + q4 - q5)/2 - cos(q2 + q3 + q4 + q5)/2, L1 + L5*cos(q2 + q3) + L3*cos(q2) + L6*cos(q2 + q3 + q4); 0, 0, 0, 1];
+    T6_0 = [cos(q6)*sin(q1)*sin(q5) + cos(q1)*cos(q2)*cos(q3)*sin(q4)*sin(q6) + cos(q1)*cos(q2)*cos(q4)*sin(q3)*sin(q6) + cos(q1)*cos(q3)*cos(q4)*sin(q2)*sin(q6) - cos(q1)*sin(q2)*sin(q3)*sin(q4)*sin(q6) - cos(q1)*cos(q2)*cos(q3)*cos(q4)*cos(q5)*cos(q6) + cos(q1)*cos(q2)*cos(q5)*cos(q6)*sin(q3)*sin(q4) + cos(q1)*cos(q3)*cos(q5)*cos(q6)*sin(q2)*sin(q4) + cos(q1)*cos(q4)*cos(q5)*cos(q6)*sin(q2)*sin(q3), cos(q1)*cos(q2)*cos(q3)*cos(q6)*sin(q4) - sin(q1)*sin(q5)*sin(q6) + cos(q1)*cos(q2)*cos(q4)*cos(q6)*sin(q3) + cos(q1)*cos(q3)*cos(q4)*cos(q6)*sin(q2) - cos(q1)*cos(q6)*sin(q2)*sin(q3)*sin(q4) + cos(q1)*cos(q2)*cos(q3)*cos(q4)*cos(q5)*sin(q6) - cos(q1)*cos(q2)*cos(q5)*sin(q3)*sin(q4)*sin(q6) - cos(q1)*cos(q3)*cos(q5)*sin(q2)*sin(q4)*sin(q6) - cos(q1)*cos(q4)*cos(q5)*sin(q2)*sin(q3)*sin(q6), cos(q5)*sin(q1) + cos(q1)*cos(q2)*cos(q3)*cos(q4)*sin(q5) - cos(q1)*cos(q2)*sin(q3)*sin(q4)*sin(q5) - cos(q1)*cos(q3)*sin(q2)*sin(q4)*sin(q5) - cos(q1)*cos(q4)*sin(q2)*sin(q3)*sin(q5), L2*sin(q1) - L3*cos(q1)*sin(q2) + L4*cos(q5)*sin(q1) - L5*cos(q1)*cos(q2)*sin(q3) - L5*cos(q1)*cos(q3)*sin(q2) - L6*cos(q1)*cos(q2)*cos(q3)*sin(q4) - L6*cos(q1)*cos(q2)*cos(q4)*sin(q3) - L6*cos(q1)*cos(q3)*cos(q4)*sin(q2) + L6*cos(q1)*sin(q2)*sin(q3)*sin(q4) - L4*cos(q1)*cos(q2)*sin(q3)*sin(q4)*sin(q5) - L4*cos(q1)*cos(q3)*sin(q2)*sin(q4)*sin(q5) - L4*cos(q1)*cos(q4)*sin(q2)*sin(q3)*sin(q5) + L4*cos(q1)*cos(q2)*cos(q3)*cos(q4)*sin(q5); cos(q2)*cos(q3)*sin(q1)*sin(q4)*sin(q6) - cos(q1)*cos(q6)*sin(q5) + cos(q2)*cos(q4)*sin(q1)*sin(q3)*sin(q6) + cos(q3)*cos(q4)*sin(q1)*sin(q2)*sin(q6) - sin(q1)*sin(q2)*sin(q3)*sin(q4)*sin(q6) - cos(q2)*cos(q3)*cos(q4)*cos(q5)*cos(q6)*sin(q1) + cos(q2)*cos(q5)*cos(q6)*sin(q1)*sin(q3)*sin(q4) + cos(q3)*cos(q5)*cos(q6)*sin(q1)*sin(q2)*sin(q4) + cos(q4)*cos(q5)*cos(q6)*sin(q1)*sin(q2)*sin(q3), cos(q1)*sin(q5)*sin(q6) + cos(q2)*cos(q3)*cos(q6)*sin(q1)*sin(q4) + cos(q2)*cos(q4)*cos(q6)*sin(q1)*sin(q3) + cos(q3)*cos(q4)*cos(q6)*sin(q1)*sin(q2) - cos(q6)*sin(q1)*sin(q2)*sin(q3)*sin(q4) + cos(q2)*cos(q3)*cos(q4)*cos(q5)*sin(q1)*sin(q6) - cos(q2)*cos(q5)*sin(q1)*sin(q3)*sin(q4)*sin(q6) - cos(q3)*cos(q5)*sin(q1)*sin(q2)*sin(q4)*sin(q6) - cos(q4)*cos(q5)*sin(q1)*sin(q2)*sin(q3)*sin(q6), cos(q2)*cos(q3)*cos(q4)*sin(q1)*sin(q5) - cos(q1)*cos(q5) - cos(q2)*sin(q1)*sin(q3)*sin(q4)*sin(q5) - cos(q3)*sin(q1)*sin(q2)*sin(q4)*sin(q5) - cos(q4)*sin(q1)*sin(q2)*sin(q3)*sin(q5), L6*sin(q1)*sin(q2)*sin(q3)*sin(q4) - L4*cos(q1)*cos(q5) - L3*sin(q1)*sin(q2) - L5*cos(q2)*sin(q1)*sin(q3) - L5*cos(q3)*sin(q1)*sin(q2) - L6*cos(q2)*cos(q3)*sin(q1)*sin(q4) - L6*cos(q2)*cos(q4)*sin(q1)*sin(q3) - L6*cos(q3)*cos(q4)*sin(q1)*sin(q2) - L2*cos(q1) - L4*cos(q2)*sin(q1)*sin(q3)*sin(q4)*sin(q5) - L4*cos(q3)*sin(q1)*sin(q2)*sin(q4)*sin(q5) - L4*cos(q4)*sin(q1)*sin(q2)*sin(q3)*sin(q5) + L4*cos(q2)*cos(q3)*cos(q4)*sin(q1)*sin(q5); cos(q2)*sin(q3)*sin(q4)*sin(q6) - cos(q2)*cos(q3)*cos(q4)*sin(q6) + cos(q3)*sin(q2)*sin(q4)*sin(q6) + cos(q4)*sin(q2)*sin(q3)*sin(q6) - cos(q2)*cos(q3)*cos(q5)*cos(q6)*sin(q4) - cos(q2)*cos(q4)*cos(q5)*cos(q6)*sin(q3) - cos(q3)*cos(q4)*cos(q5)*cos(q6)*sin(q2) + cos(q5)*cos(q6)*sin(q2)*sin(q3)*sin(q4), cos(q2)*cos(q6)*sin(q3)*sin(q4) - cos(q2)*cos(q3)*cos(q4)*cos(q6) + cos(q3)*cos(q6)*sin(q2)*sin(q4) + cos(q4)*cos(q6)*sin(q2)*sin(q3) + cos(q2)*cos(q3)*cos(q5)*sin(q4)*sin(q6) + cos(q2)*cos(q4)*cos(q5)*sin(q3)*sin(q6) + cos(q3)*cos(q4)*cos(q5)*sin(q2)*sin(q6) - cos(q5)*sin(q2)*sin(q3)*sin(q4)*sin(q6), cos(q2 + q3 + q4 - q5)/2 - cos(q2 + q3 + q4 + q5)/2, L1 - (L4*cos(q2 + q3 + q4 + q5))/2 + L5*cos(q2 + q3) + L3*cos(q2) + (L4*cos(q2 + q3 + q4 - q5))/2 + L6*cos(q2 + q3 + q4); 0, 0, 0, 1];
 
-    Tcm1_0 = [cos(q1), 0, sin(q1), 0; sin(q1), 0, -cos(q1), 0; 0, 1, 0, L6; 0, 0, 0, 1];
-    Tcm2_0 = [-cos(q1) * sin(q2), -cos(q1) * cos(q2), sin(q1), L7 * sin(q1) - L8 * cos(q1) * sin(q2); -sin(q1) * sin(q2), -cos(q2) * sin(q1), -cos(q1), - L7 * cos(q1) - L8 * sin(q1) * sin(q2); cos(q2), -sin(q2), 0, L1 + L8 * cos(q2); 0, 0, 0, 1];
-    Tcm3_0 = [-sin(q2 + q3) * cos(q1), -cos(q2 + q3) * cos(q1), sin(q1), L9 * sin(q1) - L3 * cos(q1) * sin(q2) - L10 * cos(q1) * cos(q2) * sin(q3) - L10 * cos(q1) * cos(q3) * sin(q2); -sin(q2 + q3) * sin(q1), -cos(q2 + q3) * sin(q1), -cos(q1), - L9 * cos(q1) - L3 * sin(q1) * sin(q2) - L10 * cos(q2) * sin(q1) * sin(q3) - L10 * cos(q3) * sin(q1) * sin(q2); cos(q2 + q3), -sin(q2 + q3), 0, L1 + L10 * cos(q2 + q3) + L3 * cos(q2); 0, 0, 0, 1];
+
+    Tcm1_0 = [cos(q1), 0, sin(q1), 0; sin(q1), 0, -cos(q1), 0; 0, 1, 0, L7; 0, 0, 0, 1];
+    Tcm2_0 = [-cos(q1)*sin(q2), -cos(q1)*cos(q2), sin(q1), L8*sin(q1) - L9*cos(q1)*sin(q2); -sin(q1)*sin(q2), -cos(q2)*sin(q1), -cos(q1), - L8*cos(q1) - L9*sin(q1)*sin(q2); cos(q2), -sin(q2), 0, L1 + L9*cos(q2); 0, 0, 0, 1];
+    Tcm3_0 = [-sin(q2 + q3)*cos(q1), -cos(q2 + q3)*cos(q1), sin(q1), L10*sin(q1) - L3*cos(q1)*sin(q2) - L11*cos(q1)*cos(q2)*sin(q3) - L11*cos(q1)*cos(q3)*sin(q2); -sin(q2 + q3)*sin(q1), -cos(q2 + q3)*sin(q1), -cos(q1), - L10*cos(q1) - L3*sin(q1)*sin(q2) - L11*cos(q2)*sin(q1)*sin(q3) - L11*cos(q3)*sin(q1)*sin(q2); cos(q2 + q3), -sin(q2 + q3), 0, L1 + L11*cos(q2 + q3) + L3*cos(q2); 0, 0, 0, 1];
+    Tcm4_0 = [- sin(q1 + q2 + q3 + q4)/2 - sin(q2 - q1 + q3 + q4)/2, - cos(q1 + q2 + q3 + q4)/2 - cos(q2 - q1 + q3 + q4)/2, sin(q1), L12*sin(q1) - L3*cos(q1)*sin(q2) - L5*cos(q1)*cos(q2)*sin(q3) - L5*cos(q1)*cos(q3)*sin(q2) - L13*cos(q1)*cos(q2)*cos(q3)*sin(q4) - L13*cos(q1)*cos(q2)*cos(q4)*sin(q3) - L13*cos(q1)*cos(q3)*cos(q4)*sin(q2) + L13*cos(q1)*sin(q2)*sin(q3)*sin(q4); cos(q1 + q2 + q3 + q4)/2 - cos(q2 - q1 + q3 + q4)/2, sin(q2 - q1 + q3 + q4)/2 - sin(q1 + q2 + q3 + q4)/2, -cos(q1), L13*sin(q1)*sin(q2)*sin(q3)*sin(q4) - L3*sin(q1)*sin(q2) - L5*cos(q2)*sin(q1)*sin(q3) - L5*cos(q3)*sin(q1)*sin(q2) - L13*cos(q2)*cos(q3)*sin(q1)*sin(q4) - L13*cos(q2)*cos(q4)*sin(q1)*sin(q3) - L13*cos(q3)*cos(q4)*sin(q1)*sin(q2) - L12*cos(q1); cos(q2 + q3 + q4), -sin(q2 + q3 + q4), 0, L1 + L5*cos(q2 + q3) + L3*cos(q2) + L13*cos(q2 + q3 + q4); 0, 0, 0, 1];
+    Tcm5_0 = [sin(q1)*sin(q5) - cos(q1)*cos(q2)*cos(q3)*cos(q4)*cos(q5) + cos(q1)*cos(q2)*cos(q5)*sin(q3)*sin(q4) + cos(q1)*cos(q3)*cos(q5)*sin(q2)*sin(q4) + cos(q1)*cos(q4)*cos(q5)*sin(q2)*sin(q3), cos(q5)*sin(q1) + cos(q1)*cos(q2)*cos(q3)*cos(q4)*sin(q5) - cos(q1)*cos(q2)*sin(q3)*sin(q4)*sin(q5) - cos(q1)*cos(q3)*sin(q2)*sin(q4)*sin(q5) - cos(q1)*cos(q4)*sin(q2)*sin(q3)*sin(q5), - sin(q1 + q2 + q3 + q4)/2 - sin(q2 - q1 + q3 + q4)/2, L2*sin(q1) - L3*cos(q1)*sin(q2) - L5*cos(q1)*cos(q2)*sin(q3) - L5*cos(q1)*cos(q3)*sin(q2) - L14*cos(q1)*cos(q2)*cos(q3)*sin(q4) - L14*cos(q1)*cos(q2)*cos(q4)*sin(q3) - L14*cos(q1)*cos(q3)*cos(q4)*sin(q2) + L14*cos(q1)*sin(q2)*sin(q3)*sin(q4); cos(q2)*cos(q5)*sin(q1)*sin(q3)*sin(q4) - cos(q2)*cos(q3)*cos(q4)*cos(q5)*sin(q1) - cos(q1)*sin(q5) + cos(q3)*cos(q5)*sin(q1)*sin(q2)*sin(q4) + cos(q4)*cos(q5)*sin(q1)*sin(q2)*sin(q3), cos(q2)*cos(q3)*cos(q4)*sin(q1)*sin(q5) - cos(q1)*cos(q5) - cos(q2)*sin(q1)*sin(q3)*sin(q4)*sin(q5) - cos(q3)*sin(q1)*sin(q2)*sin(q4)*sin(q5) - cos(q4)*sin(q1)*sin(q2)*sin(q3)*sin(q5), cos(q1 + q2 + q3 + q4)/2 - cos(q2 - q1 + q3 + q4)/2, L14*sin(q1)*sin(q2)*sin(q3)*sin(q4) - L3*sin(q1)*sin(q2) - L5*cos(q2)*sin(q1)*sin(q3) - L5*cos(q3)*sin(q1)*sin(q2) - L14*cos(q2)*cos(q3)*sin(q1)*sin(q4) - L14*cos(q2)*cos(q4)*sin(q1)*sin(q3) - L14*cos(q3)*cos(q4)*sin(q1)*sin(q2) - L2*cos(q1); - sin(q2 + q3 + q4 + q5)/2 - sin(q2 + q3 + q4 - q5)/2, cos(q2 + q3 + q4 - q5)/2 - cos(q2 + q3 + q4 + q5)/2, cos(q2 + q3 + q4), L1 + L5*cos(q2 + q3) + L3*cos(q2) + L14*cos(q2 + q3 + q4); 0, 0, 0, 1];
+    Tcm6_0 = [cos(q6)*sin(q1)*sin(q5) + cos(q1)*cos(q2)*cos(q3)*sin(q4)*sin(q6) + cos(q1)*cos(q2)*cos(q4)*sin(q3)*sin(q6) + cos(q1)*cos(q3)*cos(q4)*sin(q2)*sin(q6) - cos(q1)*sin(q2)*sin(q3)*sin(q4)*sin(q6) - cos(q1)*cos(q2)*cos(q3)*cos(q4)*cos(q5)*cos(q6) + cos(q1)*cos(q2)*cos(q5)*cos(q6)*sin(q3)*sin(q4) + cos(q1)*cos(q3)*cos(q5)*cos(q6)*sin(q2)*sin(q4) + cos(q1)*cos(q4)*cos(q5)*cos(q6)*sin(q2)*sin(q3), cos(q1)*cos(q2)*cos(q3)*cos(q6)*sin(q4) - sin(q1)*sin(q5)*sin(q6) + cos(q1)*cos(q2)*cos(q4)*cos(q6)*sin(q3) + cos(q1)*cos(q3)*cos(q4)*cos(q6)*sin(q2) - cos(q1)*cos(q6)*sin(q2)*sin(q3)*sin(q4) + cos(q1)*cos(q2)*cos(q3)*cos(q4)*cos(q5)*sin(q6) - cos(q1)*cos(q2)*cos(q5)*sin(q3)*sin(q4)*sin(q6) - cos(q1)*cos(q3)*cos(q5)*sin(q2)*sin(q4)*sin(q6) - cos(q1)*cos(q4)*cos(q5)*sin(q2)*sin(q3)*sin(q6), cos(q5)*sin(q1) + cos(q1)*cos(q2)*cos(q3)*cos(q4)*sin(q5) - cos(q1)*cos(q2)*sin(q3)*sin(q4)*sin(q5) - cos(q1)*cos(q3)*sin(q2)*sin(q4)*sin(q5) - cos(q1)*cos(q4)*sin(q2)*sin(q3)*sin(q5), L2*sin(q1) - L3*cos(q1)*sin(q2) + L15*cos(q5)*sin(q1) - L5*cos(q1)*cos(q2)*sin(q3) - L5*cos(q1)*cos(q3)*sin(q2) - L6*cos(q1)*cos(q2)*cos(q3)*sin(q4) - L6*cos(q1)*cos(q2)*cos(q4)*sin(q3) - L6*cos(q1)*cos(q3)*cos(q4)*sin(q2) + L6*cos(q1)*sin(q2)*sin(q3)*sin(q4) - L15*cos(q1)*cos(q2)*sin(q3)*sin(q4)*sin(q5) - L15*cos(q1)*cos(q3)*sin(q2)*sin(q4)*sin(q5) - L15*cos(q1)*cos(q4)*sin(q2)*sin(q3)*sin(q5) + L15*cos(q1)*cos(q2)*cos(q3)*cos(q4)*sin(q5); cos(q2)*cos(q3)*sin(q1)*sin(q4)*sin(q6) - cos(q1)*cos(q6)*sin(q5) + cos(q2)*cos(q4)*sin(q1)*sin(q3)*sin(q6) + cos(q3)*cos(q4)*sin(q1)*sin(q2)*sin(q6) - sin(q1)*sin(q2)*sin(q3)*sin(q4)*sin(q6) - cos(q2)*cos(q3)*cos(q4)*cos(q5)*cos(q6)*sin(q1) + cos(q2)*cos(q5)*cos(q6)*sin(q1)*sin(q3)*sin(q4) + cos(q3)*cos(q5)*cos(q6)*sin(q1)*sin(q2)*sin(q4) + cos(q4)*cos(q5)*cos(q6)*sin(q1)*sin(q2)*sin(q3), cos(q1)*sin(q5)*sin(q6) + cos(q2)*cos(q3)*cos(q6)*sin(q1)*sin(q4) + cos(q2)*cos(q4)*cos(q6)*sin(q1)*sin(q3) + cos(q3)*cos(q4)*cos(q6)*sin(q1)*sin(q2) - cos(q6)*sin(q1)*sin(q2)*sin(q3)*sin(q4) + cos(q2)*cos(q3)*cos(q4)*cos(q5)*sin(q1)*sin(q6) - cos(q2)*cos(q5)*sin(q1)*sin(q3)*sin(q4)*sin(q6) - cos(q3)*cos(q5)*sin(q1)*sin(q2)*sin(q4)*sin(q6) - cos(q4)*cos(q5)*sin(q1)*sin(q2)*sin(q3)*sin(q6), cos(q2)*cos(q3)*cos(q4)*sin(q1)*sin(q5) - cos(q1)*cos(q5) - cos(q2)*sin(q1)*sin(q3)*sin(q4)*sin(q5) - cos(q3)*sin(q1)*sin(q2)*sin(q4)*sin(q5) - cos(q4)*sin(q1)*sin(q2)*sin(q3)*sin(q5), L6*sin(q1)*sin(q2)*sin(q3)*sin(q4) - L15*cos(q1)*cos(q5) - L3*sin(q1)*sin(q2) - L5*cos(q2)*sin(q1)*sin(q3) - L5*cos(q3)*sin(q1)*sin(q2) - L6*cos(q2)*cos(q3)*sin(q1)*sin(q4) - L6*cos(q2)*cos(q4)*sin(q1)*sin(q3) - L6*cos(q3)*cos(q4)*sin(q1)*sin(q2) - L2*cos(q1) - L15*cos(q2)*sin(q1)*sin(q3)*sin(q4)*sin(q5) - L15*cos(q3)*sin(q1)*sin(q2)*sin(q4)*sin(q5) - L15*cos(q4)*sin(q1)*sin(q2)*sin(q3)*sin(q5) + L15*cos(q2)*cos(q3)*cos(q4)*sin(q1)*sin(q5); cos(q2)*sin(q3)*sin(q4)*sin(q6) - cos(q2)*cos(q3)*cos(q4)*sin(q6) + cos(q3)*sin(q2)*sin(q4)*sin(q6) + cos(q4)*sin(q2)*sin(q3)*sin(q6) - cos(q2)*cos(q3)*cos(q5)*cos(q6)*sin(q4) - cos(q2)*cos(q4)*cos(q5)*cos(q6)*sin(q3) - cos(q3)*cos(q4)*cos(q5)*cos(q6)*sin(q2) + cos(q5)*cos(q6)*sin(q2)*sin(q3)*sin(q4), cos(q2)*cos(q6)*sin(q3)*sin(q4) - cos(q2)*cos(q3)*cos(q4)*cos(q6) + cos(q3)*cos(q6)*sin(q2)*sin(q4) + cos(q4)*cos(q6)*sin(q2)*sin(q3) + cos(q2)*cos(q3)*cos(q5)*sin(q4)*sin(q6) + cos(q2)*cos(q4)*cos(q5)*sin(q3)*sin(q6) + cos(q3)*cos(q4)*cos(q5)*sin(q2)*sin(q6) - cos(q5)*sin(q2)*sin(q3)*sin(q4)*sin(q6), cos(q2 + q3 + q4 - q5)/2 - cos(q2 + q3 + q4 + q5)/2, L1 - (L15*cos(q2 + q3 + q4 + q5))/2 + L5*cos(q2 + q3) + L3*cos(q2) + (L15*cos(q2 + q3 + q4 - q5))/2 + L6*cos(q2 + q3 + q4); 0, 0, 0, 1];
 
     % Get the position of the end-effector
-    [~, Xef_0pos,~] = FKef_0_ur10_3DOF([robot_param' Q']);
-    Xef_Wpos = T0_W * [Xef_0pos';1];
+    [~, Xef_0pos, ~] = FKef_0_ur10_3DOF([robot_param' Q']);
+    Xef_Wpos = T0_W * [Xef_0pos'; 1];
     Xef_Wpos = Xef_Wpos(1:3);
     %Initialize the publishers and messages
     if t == 0
@@ -171,19 +178,17 @@ function [Out] = SimpleRobotPlotROS(u)
         tfStampedMsg3.Header.FrameId = 'ursa_base';
         tfStampedMsg3.ChildFrameId = 'DH_3';
 
-        tfStampedMsg3 = rosmessage('geometry_msgs/TransformStamped');
-        tfStampedMsg3.Header.FrameId = 'ursa_base';
-        tfStampedMsg3.ChildFrameId = 'DH_4';
-        
-        tfStampedMsg3 = rosmessage('geometry_msgs/TransformStamped');
-        tfStampedMsg3.Header.FrameId = 'ursa_base';
-        tfStampedMsg3.ChildFrameId = 'DH_5';
-        
-        tfStampedMsg3 = rosmessage('geometry_msgs/TransformStamped');
-        tfStampedMsg3.Header.FrameId = 'ursa_base';
-        tfStampedMsg3.ChildFrameId = 'DH_6';
-        
+        tfStampedMsg4 = rosmessage('geometry_msgs/TransformStamped');
+        tfStampedMsg4.Header.FrameId = 'ursa_base';
+        tfStampedMsg4.ChildFrameId = 'DH_4';
 
+        tfStampedMsg5 = rosmessage('geometry_msgs/TransformStamped');
+        tfStampedMsg5.Header.FrameId = 'ursa_base';
+        tfStampedMsg5.ChildFrameId = 'DH_5';
+
+        tfStampedMsg6 = rosmessage('geometry_msgs/TransformStamped');
+        tfStampedMsg6.Header.FrameId = 'ursa_base';
+        tfStampedMsg6.ChildFrameId = 'DH_6';
 
         % tfStampedMsgcm1 = rosmessage('geometry_msgs/TransformStamped');
         % tfStampedMsgcm1.Header.FrameId = 'ursa_base';
@@ -226,16 +231,22 @@ function [Out] = SimpleRobotPlotROS(u)
         jointmsg.Header.Seq = counter;
         jointmsg.Position = [Q', 0, 0, 0] + joint_offsets;
         send(jointpub, jointmsg);
-        
+
         getTF(tfStampedMsg, T0_W, counter, rT);
         getTF(tfStampedMsg1, T1_0, counter, rT);
         getTF(tfStampedMsg2, T2_0, counter, rT);
         getTF(tfStampedMsg3, T3_0, counter, rT);
+        getTF(tfStampedMsg4, T4_0, counter, rT);
+        getTF(tfStampedMsg5, T5_0, counter, rT);
+        getTF(tfStampedMsg6, T6_0, counter, rT);
 
         arrayTFs = [tfStampedMsg;
                 tfStampedMsg1;
                 tfStampedMsg2;
-                tfStampedMsg3];
+                tfStampedMsg3;
+                tfStampedMsg4;
+                tfStampedMsg5;
+                tfStampedMsg6];
 
         counter = counter + 1;
 
@@ -247,8 +258,9 @@ function [Out] = SimpleRobotPlotROS(u)
     %Inertia Matrix
     M = [I122 + I211 / 2 + I222 / 2 + I311 / 2 + I322 / 2 + (I311 * cos(2 * q2 + 2 * q3)) / 2 - (I322 * cos(2 * q2 + 2 * q3)) / 2 - I312 * sin(2 * q2 + 2 * q3) + (L3^2 * m3) / 2 + L7^2 * m2 + (L8^2 * m2) / 2 + L9^2 * m3 + (L10^2 * m3) / 2 + (I211 * cos(2 * q2)) / 2 - (I222 * cos(2 * q2)) / 2 - I212 * sin(2 * q2) - (L3^2 * m3 * cos(2 * q2)) / 2 - (L8^2 * m2 * cos(2 * q2)) / 2 - (L10^2 * m3 * cos(2 * q2 + 2 * q3)) / 2 + L3 * L10 * m3 * cos(q3) - L3 * L10 * m3 * cos(2 * q2 + q3), I313 * cos(q2 + q3) - I323 * sin(q2 + q3) + I213 * cos(q2) - I223 * sin(q2) - L9 * L10 * m3 * cos(q2 + q3) - L3 * L9 * m3 * cos(q2) - L7 * L8 * m2 * cos(q2), I313 * cos(q2 + q3) - I323 * sin(q2 + q3) - L9 * L10 * m3 * cos(q2 + q3); I313 * cos(q2 + q3) - I323 * sin(q2 + q3) + I213 * cos(q2) - I223 * sin(q2) - L9 * L10 * m3 * cos(q2 + q3) - L3 * L9 * m3 * cos(q2) - L7 * L8 * m2 * cos(q2), I233 + I333 + L3^2 * m3 + L8^2 * m2 + L10^2 * m3 + 2 * L3 * L10 * m3 * cos(q3), I333 + L10^2 * m3 + L3 * L10 * m3 * cos(q3); I313 * cos(q2 + q3) - I323 * sin(q2 + q3) - L9 * L10 * m3 * cos(q2 + q3), I333 + L10^2 * m3 + L3 * L10 * m3 * cos(q3), I333 + L10^2 * m3];
 
-    V = 1/2 * Qp' * M * Qp;
-
+    % V = 1/2 * Qp' * M * Qp;
+    V = 0;
+    
     %% Output: vector [Xef] (size 3X1)
     Out = [Xef_Wpos; Q; Qp; V];
 
