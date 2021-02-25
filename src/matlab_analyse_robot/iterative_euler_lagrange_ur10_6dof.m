@@ -3,7 +3,7 @@ Qp = sym('q%dp', [6 1], 'real');
 Qpp = sym('q%dpp', [6 1], 'real');
 syms([Q Qp Qpp], 'real');
 
-syms(sym('L', [10 1], 'positive'), 'positive');
+syms(sym('L', [15 1], 'positive'), 'positive');
 
 syms(sym('m', [6 1], 'positive'), 'positive');
 % syms(sym('k',[6 1],'positive'),'positive');
@@ -60,12 +60,18 @@ spi = sym(pi);
 relDH_Links = [
             q1 L1 0 spi / 2;
             q2 + spi / 2 0 L3 0;
-            q3 L2 + L4 L5 0];
+            q3 0 L5 0;
+            q4 + spi / 2 L2 0 spi / 2;
+            q5 L6 0 -spi / 2;
+            q6 L4 0 0];
 
 relDH_com = [
-        q1 L6 0 pi / 2;
-        q2 + spi / 2 L7 L8 0;
-        q3 L9 L10 0];
+        q1 L7 0 spi / 2;
+        q2 + spi / 2 L8 L9 0;
+        q3 L10 L11 0;
+        q4 L12 L13 0;
+        q5 L14 0 0;
+        q6 L15 0 0];
 
 [H_abs_stack, X_abs_stack, Ti_0_stack, Tcmi_0_stack, H_link_rel_stack, ...
         H_cm_rel_stack, X_link_abs_stack, X_cm_abs_stack] = FwdKinematics(relDH_Links, relDH_com, 0);
