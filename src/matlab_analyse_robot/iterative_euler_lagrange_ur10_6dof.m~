@@ -155,7 +155,7 @@ for idx = 1:m_size
 end
 
 for kdx = 1:q_size
-    pPqk = expand(diff(P, qi(kdx)));
+    pPqk = simplify(diff(P, qi(kdx)));
     G(kdx) = pPqk;
 end
 

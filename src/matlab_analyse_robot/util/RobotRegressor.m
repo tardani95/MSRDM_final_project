@@ -9,7 +9,7 @@ function [Y, Theta] = RobotRegressor(eqn,state_variables)
         
         expr = children(eqn(idx));
         
-        for jdx = 1:size(expr,2)
+        parfor jdx = 1:size(expr,2)
             
             parameters = [parameters remove_state_var(expr(jdx),state_variables)];
             
