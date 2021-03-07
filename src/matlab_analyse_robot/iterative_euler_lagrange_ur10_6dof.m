@@ -15,9 +15,9 @@ syms(sym('I4%d%d', [3 3], 'positive'), 'positive');
 syms(sym('I5%d%d', [3 3], 'positive'), 'positive');
 syms(sym('I6%d%d', [3 3], 'positive'), 'positive');
 
-syms g gx gy gz real
+syms g real
 
-g_axis = [gx; gy; gz];
+g_axis = sym([0; 0; 1]);
 
 I1 = [I111 I112 I113;
     I112 I122 I123;
@@ -202,24 +202,23 @@ for kdx = 1:q_size
 
 end
 
-% C = simplify(C)
-% M = expand(M);
-C = expand(C);
+C = expand(C)
 
 % the DM-2*C must be skewsymmetric
 DM = zeros(size(M));
 
 for idx = 1:q_size
-    DM = DM + diff(M, qi(idx)) * qip(idx);
+    DM = DM + diff(M, qi(idx)) * qip(idx) + diff(M,qip(idx)) * qipp(idx);
 end
 
 % DM = diff(M, q1) * q1p + diff(M, q2) * q2p + diff(M, q3) * q3p ...
 %      + diff(M, q1p) * q1pp + diff(M, q2p) * q2pp + diff(M, q3p) * q3pp;
 % DM = simplify(DM);
 
+DM = expand(DM);
+
 N = DM - 2 * C;
-N = simplify(expand(N));
-M = simplify(expand(M));
+N = expand(N);
 
 if isSym(M)
     disp("M matrix is symmetric"); % ok
