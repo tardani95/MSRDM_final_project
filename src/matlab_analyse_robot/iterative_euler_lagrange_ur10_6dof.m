@@ -81,7 +81,7 @@ relDH_com = [
         H_cm_rel_stack, X_link_abs_stack, X_cm_abs_stack] = FwdKinematics(relDH_Links, relDH_com, 0);
 
 Xef_0 = X_link_abs_stack(:, :, end);
-Xef_0_str = char(simplify(Xef_0));
+char_Xef_0 = char(simplify(extend(Xef_0)));
 
 % compute the transformations regarding to the world coordinate frame
 T0_W = rotm_trvec2tf(RotX(spi / 2), [0; 0; 0]);
@@ -89,7 +89,7 @@ T0_W = rotm_trvec2tf(RotX(spi / 2), [0; 0; 0]);
 Tef_W = T0_W * Ti_0_stack(:, :, end);
 
 Xef_W = tf2pose(Tef_W);
-Xef_W_char = char(simplify(expand(Xef_W)));
+char_Xef_W = char(simplify(expand(Xef_W)));
 
 T1_0 = Ti_0_stack(:, :, 1);
 T2_0 = Ti_0_stack(:, :, 2);
@@ -105,19 +105,19 @@ Tcm4_0 = Tcmi_0_stack(:, :, 4);
 Tcm5_0 = Tcmi_0_stack(:, :, 5);
 Tcm6_0 = Tcmi_0_stack(:, :, 6);
 
-T1_0_char = char(simplify(expand(T1_0)));
-T2_0_char = char(simplify(expand(T2_0)));
-T3_0_char = char(simplify(expand(T3_0)));
-T4_0_char = char(simplify(expand(T4_0)));
-T5_0_char = char(simplify(expand(T5_0)));
-T6_0_char = char(simplify(expand(T6_0)));
+char_T1_0 = char(simplify(expand(T1_0)));
+char_T2_0 = char(simplify(expand(T2_0)));
+char_T3_0 = char(simplify(expand(T3_0)));
+char_T4_0 = char(simplify(expand(T4_0)));
+char_T5_0 = char(simplify(expand(T5_0)));
+char_T6_0 = char(simplify(expand(T6_0)));
 
-Tcm1_0_char = char(simplify(expand(Tcm1_0)));
-Tcm2_0_char = char(simplify(expand(Tcm2_0)));
-Tcm3_0_char = char(simplify(expand(Tcm3_0)));
-Tcm4_0_char = char(simplify(expand(Tcm4_0)));
-Tcm5_0_char = char(simplify(expand(Tcm5_0)));
-Tcm6_0_char = char(simplify(expand(Tcm6_0)));
+char_Tcm1_0 = char(simplify(expand(Tcm1_0)));
+char_Tcm2_0 = char(simplify(expand(Tcm2_0)));
+char_Tcm3_0 = char(simplify(expand(Tcm3_0)));
+char_Tcm4_0 = char(simplify(expand(Tcm4_0)));
+char_Tcm5_0 = char(simplify(expand(Tcm5_0)));
+char_Tcm6_0 = char(simplify(expand(Tcm6_0)));
 
 %% Differential Kinematics
 [jacobi_abs_stack, Ji_0_stack, Jcmi_0_stack] = DiffKinematics(H_abs_stack, 'rrrrrr');
@@ -131,7 +131,7 @@ for idx = 1:m_size
 end
 
 Jef_0 = Ji_0_stack(:, :, end);
-Jef_0_str = char(simplify(expand(Jef_0)));
+% char_Jef_0 = char(simplify(expand(Jef_0)));
 
 %% M,C,G calculation
 
@@ -155,12 +155,12 @@ for idx = 1:m_size
 end
 
 for kdx = 1:q_size
-    pPqk = expand(diff(P, qi(kdx)));
+    pPqk = diff(P, qi(kdx));
     G(kdx) = pPqk;
 end
 
-G = simplify(expand(G))
-G_str = char(simplify(G));
+G = expand(G)
+char_G = char(simplify(G));
 
 % Complete the Inertia Matrix (symbolic form)
 M = sym(zeros(m_size));
@@ -175,12 +175,12 @@ for idx = 1:m_size
     M = M + Mi;
 end
 
+M = expand(M)
 % M = simplify(M)
 % M = expand(M)
 
 %Complete Centripetal and Coriolis Matrix (symbolic form)
 C = sym(zeros(length(qi)));
-M = expand(M);
 
 for kdx = 1:q_size
 
@@ -188,11 +188,11 @@ for kdx = 1:q_size
 
         for idx = 1:q_size
             %             pM_kj_qi = simplify(diff(M(kdx,jdx), qi(idx)));
-            pM_kj_qi = expand(diff(M(kdx, jdx), qi(idx)));
+            pM_kj_qi = diff(M(kdx, jdx), qi(idx));
             %             pM_ki_qj = simplify(diff(M(kdx,idx), qi(jdx)));
-            pM_ki_qj = expand(diff(M(kdx, idx), qi(jdx)));
+            pM_ki_qj = diff(M(kdx, idx), qi(jdx));
             %             pM_ij_qk = simplify(diff(M(idx,jdx), qi(kdx)));
-            pM_ij_qk = expand(diff(M(idx, jdx), qi(kdx)));
+            pM_ij_qk = diff(M(idx, jdx), qi(kdx));
             %             C(kdx,jdx) = simplify(C(kdx,jdx) + 1/2 * (pM_kj_qi + pM_ki_qj - pM_ij_qk) * qip(idx));
             C(kdx, jdx) = C(kdx, jdx) + (1/2) * (pM_kj_qi + pM_ki_qj - pM_ij_qk) * qip(idx);
         end
@@ -227,6 +227,7 @@ end
 if isSkewSym(N)
     disp("N matrix is skew symmetric"); % ok
 end
+
 
 M_char = char(simplify(expand(M)));
 C_char = char(simplify(expand(C)));
