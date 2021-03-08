@@ -189,11 +189,11 @@ for kdx = 1:q_size
 
         for idx = 1:q_size
             %             pM_kj_qi = simplify(diff(M(kdx,jdx), qi(idx)));
-            pM_kj_qi = diff(M(kdx, jdx), qi(idx));
+            pM_kj_qi = expand(diff(M(kdx, jdx), qi(idx)));
             %             pM_ki_qj = simplify(diff(M(kdx,idx), qi(jdx)));
-            pM_ki_qj = diff(M(kdx, idx), qi(jdx));
+            pM_ki_qj = expand(diff(M(kdx, idx), qi(jdx)));
             %             pM_ij_qk = simplify(diff(M(idx,jdx), qi(kdx)));
-            pM_ij_qk = diff(M(idx, jdx), qi(kdx));
+            pM_ij_qk = expand(diff(M(idx, jdx), qi(kdx)));
             %             C(kdx,jdx) = simplify(C(kdx,jdx) + 1/2 * (pM_kj_qi + pM_ki_qj - pM_ij_qk) * qip(idx));
             C(kdx, jdx) = C(kdx, jdx) + (1/2) * (pM_kj_qi + pM_ki_qj - pM_ij_qk) * qip(idx);
         end
