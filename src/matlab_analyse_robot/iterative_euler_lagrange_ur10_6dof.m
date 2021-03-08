@@ -54,6 +54,7 @@ Ii(:, :, 6) = I6;
 
 qi = [q1, q2, q3, q4, q5, q6];
 qip = [q1p, q2p, q3p, q4p, q5p, q6p];
+qipp = [q1pp, q2pp, q3pp, q4pp, q5pp, q6pp];
 
 m_size = length(mi);
 q_size = length(qi);
@@ -81,7 +82,7 @@ relDH_com = [
         H_cm_rel_stack, X_link_abs_stack, X_cm_abs_stack] = FwdKinematics(relDH_Links, relDH_com, 0);
 
 Xef_0 = X_link_abs_stack(:, :, end);
-char_Xef_0 = char(simplify(extend(Xef_0)));
+char_Xef_0 = char(simplify(expand(Xef_0)));
 
 % compute the transformations regarding to the world coordinate frame
 T0_W = rotm_trvec2tf(RotX(spi / 2), [0; 0; 0]);
@@ -208,7 +209,7 @@ C = expand(C)
 DM = zeros(size(M));
 
 for idx = 1:q_size
-    DM = DM + diff(M, qi(idx)) * qip(idx) + diff(M,qip(idx)) * qipp(idx);
+    DM = DM + diff(M, qi(idx)) * qip(idx) + diff(M, qip(idx)) * qipp(idx);
 end
 
 % DM = diff(M, q1) * q1p + diff(M, q2) * q2p + diff(M, q3) * q3p ...
