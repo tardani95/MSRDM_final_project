@@ -6,7 +6,7 @@
             "type": "shell",
             "command": "catkin_make",
             "args": [
-                "-j4",
+                "-j8",
                 "-DCMAKE_BUILD_TYPE=Debug"
             ],
             "problemMatcher": [],
@@ -16,7 +16,7 @@
             }
         },
         {
-            "label": "ROS: catkin_make only one",
+            "label": "ROS: catkin_make only package",
             "type": "shell",
             "command": "catkin_make",
             "args": [

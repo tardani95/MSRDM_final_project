@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"qapplication": "cpp"
+		},
+		"python.autoComplete.extraPaths": [
+			"/home/tar/dev/ros_projects/msbrdm/MSRDM_final_project/devel/lib/python2.7/dist-packages",
+			"/opt/ros/melodic/lib/python2.7/dist-packages"
+		]
+	}
+}
