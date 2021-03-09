@@ -2,19 +2,17 @@
 #include<tum_ics_ur10_controller_tutorial/SimpleEffortControl.h>
 #include<QApplication>
 
-int main(int argc, char **argv)
-{
-    QApplication a(argc,argv);
+int main(int argc, char **argv) {
+    QApplication a(argc, argv);
 
-    ros::init(argc,argv,"testRobotArmClass",ros::init_options::AnonymousName);
+    ros::init(argc, argv, "testRobotArmClass", ros::init_options::AnonymousName);
 
-    QString configFilePath=argv[1];
+    QString configFilePath = argv[1];
     ROS_INFO_STREAM("Config File: " << configFilePath.toStdString().c_str());
 
     // starts robotArm communication and the thread
     tum_ics_ur_robot_lli::Robot::RobotArmConstrained robot(configFilePath);;
-    if(!robot.init())
-    {
+    if (!robot.init()) {
         return -1;
     }
 
@@ -24,8 +22,7 @@ int main(int argc, char **argv)
 
     //The control must be connected to the robot after the init()-->The dynamic model needs to
     ROS_INFO_STREAM("Add Controller");
-    if(!robot.add(&controller))
-    {
+    if (!robot.add(&controller)) {
         return -1;
     }
     controller.setQHome(robot.qHome());

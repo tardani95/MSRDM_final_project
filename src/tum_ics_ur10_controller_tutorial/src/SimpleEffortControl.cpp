@@ -2,183 +2,179 @@
 
 #include <tum_ics_ur_robot_msgs/ControlData.h>
 
-namespace tum_ics_ur_robot_lli
-{
-  namespace RobotControllers
-  {
+namespace tum_ics_ur_robot_lli {
+    namespace RobotControllers {
 
-    SimpleEffortControl::SimpleEffortControl(double weight, const QString &name) : 
-      ControlEffort(name, SPLINE_TYPE, JOINT_SPACE, weight),
-      m_startFlag(false),
-      m_Kp(Matrix6d::Zero()),
-      m_Kd(Matrix6d::Zero()),
-      m_Ki(Matrix6d::Zero()),
-      m_goal(Vector6d::Zero()),
-      m_totalTime(100.0),
-      m_DeltaQ(Vector6d::Zero()),
-      m_DeltaQp(Vector6d::Zero())
-    {
-      pubCtrlData = n.advertise<tum_ics_ur_robot_msgs::ControlData>("SimpleEffortCtrlData", 100);
+        SimpleEffortControl::SimpleEffortControl(double weight, const QString &name)
+                : ControlEffort(name, SPLINE_TYPE, JOINT_SPACE, weight),
+                  m_startFlag(false),
+                  m_Kp(Matrix6d::Zero()),
+                  m_Kd(Matrix6d::Zero()),
+                  m_Ki(Matrix6d::Zero()),
+                  m_goal(Vector6d::Zero()),
+                  m_totalTime(100.0),
+                  m_DeltaQ(Vector6d::Zero()),
+                  m_DeltaQp(Vector6d::Zero()) {
+            pubCtrlData = n.advertise<tum_ics_ur_robot_msgs::ControlData>(
+                    "SimpleEffortCtrlData", 100);
 
-      m_controlPeriod = 0.002;
+            m_controlPeriod = 0.002;
 
-      ROS_INFO_STREAM("SimpleEffortCtrl Control Period: " << m_controlPeriod);
-    }
+            ROS_INFO_STREAM("SimpleEffortCtrl Control Period: " << m_controlPeriod);
+        }
 
-    SimpleEffortControl::~SimpleEffortControl()
-    {
-    }
+        SimpleEffortControl::~SimpleEffortControl() {}
 
-    void SimpleEffortControl::setQInit(const JointState &qinit)
-    {
-      m_qInit = qinit;
-    }
-    void SimpleEffortControl::setQHome(const JointState &qhome)
-    {
-      m_qHome = qhome;
-    }
-    void SimpleEffortControl::setQPark(const JointState &qpark)
-    {
-      m_qPark = qpark;
-    }
+        void SimpleEffortControl::setQInit(const JointState &qinit) {
+            m_qInit = qinit;
+        }
 
-    bool SimpleEffortControl::init()
-    {
-      ROS_WARN_STREAM("SimpleEffortControl::init");
+        void SimpleEffortControl::setQHome(const JointState &qhome) {
+            m_qHome = qhome;
+        }
 
-      std::vector<double> vec;
+        void SimpleEffortControl::setQPark(const JointState &qpark) {
+            m_qPark = qpark;
+        }
 
-      // check namespace
-      std::string ns = "~simple_effort_ctrl";
-      if (!ros::param::has(ns))
-      {
-        ROS_ERROR_STREAM("SimpleEffortControl init(): Control gains not defined in:" << ns);
-        m_error = true;
-        return false;
-      }
+        bool SimpleEffortControl::init() {
+            ROS_WARN_STREAM("SimpleEffortControl::init");
 
-      // D GAINS
-      ros::param::get(ns + "/gains_d", vec);
-      if (vec.size() < STD_DOF)
-      {
-        ROS_ERROR_STREAM("gains_d: wrong number of dimensions:" << vec.size());
-        m_error = true;
-        return false;
-      }
-      for (size_t i = 0; i < STD_DOF; i++)
-      {
-        m_Kd(i, i) = vec[i];
-      }
-      ROS_WARN_STREAM("Kd: \n" << m_Kd);
+            std::vector<double> vec;
 
-      // P GAINS
-      ros::param::get(ns + "/gains_p", vec);
-      if (vec.size() < STD_DOF)
-      {
-        ROS_ERROR_STREAM("gains_p: wrong number of dimensions:" << vec.size());
-        m_error = true;
-        return false;
-      }
-      for (int i = 0; i < STD_DOF; i++)
-      {
-        m_Kp(i, i) = vec[i] / m_Kd(i, i);
-      }
-      ROS_WARN_STREAM("Kp: \n" << m_Kp);
+            // check namespace
+            std::string ns = "~simple_effort_ctrl";
+            if (!ros::param::has(ns)) {
+                ROS_ERROR_STREAM(
+                        "SimpleEffortControl init(): Control gains not defined in:" << ns);
+                m_error = true;
+                return false;
+            }
 
-      // GOAL
-      ros::param::get(ns + "/goal", vec);
-      if (vec.size() < STD_DOF)
-      {
-        ROS_ERROR_STREAM("gains_p: wrong number of dimensions:" << vec.size());
-        m_error = true;
-        return false;
-      }
-      for (int i = 0; i < STD_DOF; i++)
-      {
-        m_goal(i) = vec[i];
-      }
-      
-      // total time
-      ros::param::get(ns + "/time", m_totalTime);
-      if (!(m_totalTime > 0))
-      {
-        ROS_ERROR_STREAM("m_totalTime: is negative:" << m_totalTime);
-        m_totalTime = 100.0;
-      }
+            // D GAINS
+            ros::param::get(ns + "/gains_d", vec);
+            if (vec.size() < STD_DOF) {
+                ROS_ERROR_STREAM("gains_d: wrong number of dimensions:" << vec.size());
+                m_error = true;
+                return false;
+            }
+            for (size_t i = 0; i < STD_DOF; i++) {
+                m_Kd(i, i) = vec[i];
+            }
+            ROS_WARN_STREAM("Kd: \n" << m_Kd);
 
-      ROS_WARN_STREAM("Goal [DEG]: \n" << m_goal.transpose());
-      ROS_WARN_STREAM("Total Time [s]: " << m_totalTime);
-      m_goal = DEG2RAD(m_goal);
-      ROS_WARN_STREAM("Goal [RAD]: \n" << m_goal.transpose());
-      return true;
-    }
+            // P GAINS
+            ros::param::get(ns + "/gains_p", vec);
+            if (vec.size() < STD_DOF) {
+                ROS_ERROR_STREAM("gains_p: wrong number of dimensions:" << vec.size());
+                m_error = true;
+                return false;
+            }
+            for (int i = 0; i < STD_DOF; i++) {
+                m_Kp(i, i) = vec[i] / m_Kd(i, i);
+            }
+            ROS_WARN_STREAM("Kp: \n" << m_Kp);
 
-    bool SimpleEffortControl::start()
-    {
-      ROS_WARN_STREAM("SimpleEffortControl::start");
-      return true;
-    }
+            // I GAINS
+            ros::param::get(ns + "/gains_i", vec);
+            if (vec.size() < STD_DOF) {
+                ROS_ERROR_STREAM("gains_i: wrong number of dimensions:" << vec.size());
+                m_error = true;
+                return false;
+            }
+            for (size_t i = 0; i < STD_DOF; i++) {
+                m_Ki(i, i) = vec[i];
+            }
+            ROS_WARN_STREAM("Ki: \n" << m_Ki);
+            
 
-    Vector6d SimpleEffortControl::update(const RobotTime &time, const JointState &current)
-    {
-      if (!m_startFlag)
-      {
-        m_qStart = current.q;
-        ROS_WARN_STREAM("START [DEG]: \n" << m_qStart.transpose());
-        m_startFlag = true;
-      }
+            // GOAL
+            ros::param::get(ns + "/goal1", vec);
+            if (vec.size() < STD_DOF) {
+                ROS_ERROR_STREAM("goal: wrong number of dimensions:" << vec.size());
+                m_error = true;
+                return false;
+            }
+            for (int i = 0; i < STD_DOF; i++) {
+                m_goal(i) = vec[i];
+            }
 
-      // control torque
-      Vector6d tau;
-      tau.setZero();
+            // total time
+            ros::param::get(ns + "/time", m_totalTime);
+            if (!(m_totalTime > 0)) {
+                ROS_ERROR_STREAM("m_totalTime: is negative:" << m_totalTime);
+                m_totalTime = 100.0;
+            }
 
-      // poly spline
-      VVector6d vQd;
-      vQd = getJointPVT5(m_qStart, m_goal, time.tD(), m_totalTime);
+            ROS_WARN_STREAM("Goal [DEG]: \n" << m_goal.transpose());
+            ROS_WARN_STREAM("Total Time [s]: " << m_totalTime);
+            m_goal = DEG2RAD(m_goal);
+            ROS_WARN_STREAM("Goal [RAD]: \n" << m_goal.transpose());
+            return true;
+        }
 
-      // erros
-      m_DeltaQ = current.q - vQd[0];
-      m_DeltaQp = current.qp - vQd[1];
+        bool SimpleEffortControl::start() {
+            ROS_WARN_STREAM("SimpleEffortControl::start");
+            return true;
+        }
 
-      // reference
-      JointState js_r;
-      js_r = current;
-      js_r.qp = vQd[1] - m_Kp * m_DeltaQ;
-      js_r.qpp = vQd[2] - m_Kp * m_DeltaQp;
+        Vector6d SimpleEffortControl::update(const RobotTime &time,
+                                             const JointState &current) {
+            if (!m_startFlag) {
+                m_qStart = current.q;
+                ROS_WARN_STREAM("START [DEG]: \n" << m_qStart.transpose());
+                m_startFlag = true;
+            }
 
-      // torque
-      Vector6d Sq = current.qp - js_r.qp;
-      tau = -m_Kd * Sq;
-      // tau << 1.0, 50.0, 30.0, 0.5, 0.5, 0.5;
+            // control torque
+            Vector6d tau;
+            tau.setZero();
 
-      // publish the ControlData (only for debugging)
-      tum_ics_ur_robot_msgs::ControlData msg;
-      msg.header.stamp = ros::Time::now();
-      msg.time = time.tD();
-      for (int i = 0; i < STD_DOF; i++)
-      {
-        msg.q[i] = current.q(i);
-        msg.qp[i] = current.qp(i);
-        msg.qpp[i] = current.qpp(i);
+            // poly spline
+            VVector6d vQd;
+            vQd = getJointPVT5(m_qStart, m_goal, time.tD(), m_totalTime);
 
-        msg.qd[i] = vQd[0](i);
-        msg.qpd[i] = vQd[1](i);
+            // erros
+            m_DeltaQ = current.q - vQd[0];
+            m_DeltaQp = current.qp - vQd[1];
 
-        msg.Dq[i] = m_DeltaQ(i);
-        msg.Dqp[i] = m_DeltaQp(i);
+            // reference
+            JointState js_r;
+            js_r = current;
+            js_r.qp = vQd[1] - m_Kp * m_DeltaQ;
+            js_r.qpp = vQd[2] - m_Kp * m_DeltaQp;
 
-        msg.torques[i] = current.tau(i);
-      }
-      pubCtrlData.publish(msg);
+            // torque
+            Vector6d Sq = current.qp - js_r.qp;
+            tau = -m_Kd * Sq;
+            // tau << 1.0, 50.0, 30.0, 0.5, 0.5, 0.5;
 
-      ROS_WARN_STREAM("tau=" << tau.transpose());
-      return tau;
-    }
+            // publish the ControlData (only for debugging)
+            tum_ics_ur_robot_msgs::ControlData msg;
+            msg.header.stamp = ros::Time::now();
+            msg.time = time.tD();
+            for (int i = 0; i < STD_DOF; i++) {
+                msg.q[i] = current.q(i);
+                msg.qp[i] = current.qp(i);
+                msg.qpp[i] = current.qpp(i);
 
-    bool SimpleEffortControl::stop()
-    {
-      return true;
-    }
+                msg.qd[i] = vQd[0](i);
+                msg.qpd[i] = vQd[1](i);
 
-  } // namespace RobotControllers
-} // namespace tum_ics_ur_robot_lli
+                msg.Dq[i] = m_DeltaQ(i);
+                msg.Dqp[i] = m_DeltaQp(i);
+
+                msg.torques[i] = current.tau(i);
+            }
+            pubCtrlData.publish(msg);
+
+            // ROS_WARN_STREAM("tau=" << tau.transpose());
+            return tau;
+        }
+
+        bool SimpleEffortControl::stop() {
+            return true;
+        }
+
+    }  // namespace RobotControllers
+}  // namespace tum_ics_ur_robot_lli
