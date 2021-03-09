@@ -16,13 +16,13 @@
             }
         },
         {
-            "label": "ROS: catkin_make only package",
+            "label": "ROS: catkin_make tum_ics_ur10_controller_tutorial",
             "type": "shell",
             "command": "catkin_make",
             "args": [
                 "--pkg",
-                "<your package name, e.g. hello_vs_code>",
-                "-j4",
+                "tum_ics_ur10_controller_tutorial",
+                "-j8",
                 "-DCMAKE_BUILD_TYPE=Debug"
             ],
             "problemMatcher": [],

@@ -149,6 +149,7 @@ namespace tum_ics_ur_robot_lli
       // torque
       Vector6d Sq = current.qp - js_r.qp;
       tau = -m_Kd * Sq;
+      // tau << 1.0, 50.0, 30.0, 0.5, 0.5, 0.5;
 
       // publish the ControlData (only for debugging)
       tum_ics_ur_robot_msgs::ControlData msg;
@@ -170,7 +171,7 @@ namespace tum_ics_ur_robot_lli
       }
       pubCtrlData.publish(msg);
 
-      // ROS_WARN_STREAM("tau=" << tau.transpose());
+      ROS_WARN_STREAM("tau=" << tau.transpose());
       return tau;
     }
 
