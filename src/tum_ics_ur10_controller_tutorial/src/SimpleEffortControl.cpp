@@ -14,7 +14,8 @@ namespace tum_ics_ur_robot_lli {
                   m_goal(Vector6d::Zero()),
                   m_totalTime(100.0),
                   m_DeltaQ(Vector6d::Zero()),
-                  m_DeltaQp(Vector6d::Zero()) {
+                  m_DeltaQp(Vector6d::Zero()),
+                  m_ur10_model(ur::UR10Model("ur10_model")) {
             pubCtrlData = n.advertise<tum_ics_ur_robot_msgs::ControlData>(
                     "SimpleEffortCtrlData", 100);
 
@@ -110,6 +111,35 @@ namespace tum_ics_ur_robot_lli {
             ROS_WARN_STREAM("Total Time [s]: " << m_totalTime);
             m_goal = DEG2RAD(m_goal);
             ROS_WARN_STREAM("Goal [RAD]: \n" << m_goal.transpose());
+
+
+            // initalize the adaptive robot model parameters
+            if(!m_ur10_model.initRequest(n))
+            {
+                ROS_ERROR_STREAM("Error initalizing model");
+                m_error = true;
+                return false;
+            }
+
+            // call functions
+            ow::VectorDof q, qP, qrP, qrPP;
+            q << 2.82, -2.03, -1.43, -0.67, -1.0, 0.16;
+            qP.setZero();
+            qrP.setZero();
+            qrPP.setZero();
+
+            ur::UR10Model::Regressor Y = m_ur10_model.regressor(q, qP, qrP, qrPP);
+
+            ur::UR10Model::Parameters th = m_ur10_model.parameterInitalGuess(); 
+
+            Eigen::Affine3d T_ef_0 = m_ur10_model.T_ef_0(q);
+
+            Eigen::Matrix<double,6,6> J_ef_0 = m_ur10_model.J_ef_0(q);
+
+            // print something
+            ROS_WARN_STREAM("T_ef_0=\n" << T_ef_0.matrix());
+            ROS_WARN_STREAM("J_ef_0=\n" << J_ef_0);
+
             return true;
         }
 

@@ -2,6 +2,7 @@
 #define UR_ROBOT_LLI_SIMPLEEFFORTCONTROL_H
 
 #include <tum_ics_ur_robot_lli/RobotControllers/ControlEffort.h>
+#include <ur10_robot_model/model_ur10.h>
 
 namespace tum_ics_ur_robot_lli {
     namespace RobotControllers {
@@ -17,6 +18,8 @@ namespace tum_ics_ur_robot_lli {
 
             ros::NodeHandle n;
             ros::Publisher pubCtrlData;
+
+            ur::UR10Model m_ur10_model;
 
             Matrix6d m_Kp;
             Matrix6d m_Kd;

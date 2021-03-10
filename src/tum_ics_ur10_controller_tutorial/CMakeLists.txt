@@ -9,6 +9,7 @@ SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 find_package(catkin REQUIRED COMPONENTS
   tum_ics_ur_robot_msgs
   tum_ics_ur_robot_lli
+  ur10_robot_model
   roscpp
   sensor_msgs
   std_msgs
@@ -54,7 +55,7 @@ set(CMAKE_CXX_FLAGS "${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES my_robot_control_lli
-  CATKIN_DEPENDS tum_ics_ur_robot_msgs roscpp rospy sensor_msgs std_msgs tf tf_conversions visualization_msgs object_msgs tum_ics_ur_robot_lli
+  CATKIN_DEPENDS ur10_robot_model tum_ics_ur_robot_msgs roscpp rospy sensor_msgs std_msgs tf tf_conversions visualization_msgs object_msgs tum_ics_ur_robot_lli
   DEPENDS ${DEPENDS_VAR}
 )
 

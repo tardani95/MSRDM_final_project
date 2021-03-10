@@ -50,6 +50,7 @@
   <build_depend>tum_ics_ur_robot_msgs</build_depend>
   <build_depend>tum_ics_ur_robot_lli</build_depend>
   <!--build_depend>tum_ics_ur_robot_controllers</build_depend-->
+  <build_depend>ur10_robot_model</build_depend>
 
   <build_depend>libpcl-all-dev</build_depend>
   <build_depend>pcl_msgs</build_depend>
@@ -82,6 +83,7 @@
   <run_depend>tum_ics_ur_robot_msgs</run_depend>
   <run_depend>tum_ics_ur_robot_lli</run_depend>
   <!--run_depend>tum_ics_ur_robot_controllers</run_depend-->
+  <run_depend>ur10_robot_model</run_depend>
 
   <run_depend>libpcl-all</run_depend>
   <run_depend>pcl_msgs</run_depend>
