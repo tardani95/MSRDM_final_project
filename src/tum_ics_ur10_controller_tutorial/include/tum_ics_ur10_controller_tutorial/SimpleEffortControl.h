@@ -20,6 +20,7 @@ namespace tum_ics_ur_robot_lli {
             ros::Publisher pubCtrlData;
 
             ur::UR10Model m_ur10_model;
+            ur::UR10Model::Parameters m_theta;
 
             Matrix6d m_Kp;
             Matrix6d m_Kd;
@@ -29,6 +30,10 @@ namespace tum_ics_ur_robot_lli {
 
             Vector6d m_DeltaQ;
             Vector6d m_DeltaQp;
+
+            Vector6d m_sumDeltaQ;
+            Vector6d m_sumDeltaQp;
+
             double m_controlPeriod; //[s]
 
         public:

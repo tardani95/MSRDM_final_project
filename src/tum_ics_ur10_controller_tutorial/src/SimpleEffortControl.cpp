@@ -15,9 +15,14 @@ namespace tum_ics_ur_robot_lli {
                   m_totalTime(100.0),
                   m_DeltaQ(Vector6d::Zero()),
                   m_DeltaQp(Vector6d::Zero()),
+                  m_sumDeltaQ(Vector6d::Zero()),
+                  m_sumDeltaQp(Vector6d::Zero()),
                   m_ur10_model(ur::UR10Model("ur10_model")) {
+            
             pubCtrlData = n.advertise<tum_ics_ur_robot_msgs::ControlData>(
                     "SimpleEffortCtrlData", 100);
+
+            m_theta = m_ur10_model.parameterInitalGuess();
 
             m_controlPeriod = 0.002;
 
@@ -121,25 +126,6 @@ namespace tum_ics_ur_robot_lli {
                 return false;
             }
 
-            // call functions
-            ow::VectorDof q, qP, qrP, qrPP;
-            q << 2.82, -2.03, -1.43, -0.67, -1.0, 0.16;
-            qP.setZero();
-            qrP.setZero();
-            qrPP.setZero();
-
-            ur::UR10Model::Regressor Y = m_ur10_model.regressor(q, qP, qrP, qrPP);
-
-            ur::UR10Model::Parameters th = m_ur10_model.parameterInitalGuess(); 
-
-            Eigen::Affine3d T_ef_0 = m_ur10_model.T_ef_0(q);
-
-            Eigen::Matrix<double,6,6> J_ef_0 = m_ur10_model.J_ef_0(q);
-
-            // print something
-            ROS_WARN_STREAM("T_ef_0=\n" << T_ef_0.matrix());
-            ROS_WARN_STREAM("J_ef_0=\n" << J_ef_0);
-
             return true;
         }
 
@@ -153,7 +139,7 @@ namespace tum_ics_ur_robot_lli {
             if (!m_startFlag) {
                 m_qStart = current.q;
                 ROS_WARN_STREAM("START [DEG]: \n" << m_qStart.transpose());
-                m_startFlag = true;
+                m_startFlag = true; 
             }
 
             // control torque
@@ -168,11 +154,34 @@ namespace tum_ics_ur_robot_lli {
             m_DeltaQ = current.q - vQd[0];
             m_DeltaQp = current.qp - vQd[1];
 
+            m_sumDeltaQ += m_DeltaQ * m_controlPeriod;
+            m_sumDeltaQp += m_DeltaQp * m_controlPeriod;
+
             // reference
             JointState js_r;
             js_r = current;
-            js_r.qp = vQd[1] - m_Kp * m_DeltaQ;
-            js_r.qpp = vQd[2] - m_Kp * m_DeltaQp;
+            js_r.qp = vQd[1] - m_Kp * m_DeltaQ - m_Ki * m_sumDeltaQ;
+            js_r.qpp = vQd[2] - m_Kp * m_DeltaQp - m_Ki * m_sumDeltaQp;
+
+
+            // robot model
+            Vector6d q, qp, qrp, qrpp;
+            q = current.q;
+            qp = current.qp;
+            qrp = js_r.qp;
+            qrpp = js_r.qpp;
+
+            ur::UR10Model::Regressor Y = m_ur10_model.regressor(q, qp, qrp, qrpp);
+
+            // Eigen::Affine3d T_ef_0 = m_ur10_model.T_ef_0(q);
+
+            // Eigen::Matrix<double,6,6> J_ef_0 = m_ur10_model.J_ef_0(q);
+
+            // // print something
+            // ROS_WARN_STREAM("T_ef_0=\n" << T_ef_0.matrix());
+            // ROS_WARN_STREAM("J_ef_0=\n" << J_ef_0);
+            ROS_WARN_STREAM("Y=\n" << Y);
+
 
             // torque
             Vector6d Sq = current.qp - js_r.qp;
