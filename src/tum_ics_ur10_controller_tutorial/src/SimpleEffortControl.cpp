@@ -17,6 +17,7 @@ namespace tum_ics_ur_robot_lli {
                   m_DeltaQp(Vector6d::Zero()),
                   m_sumDeltaQ(Vector6d::Zero()),
                   m_sumDeltaQp(Vector6d::Zero()),
+                  m_control_mode(ControlMode::JS),
                   m_ur10_model(ur::UR10Model("ur10_model")) {
             
             pubCtrlData = n.advertise<tum_ics_ur_robot_msgs::ControlData>(

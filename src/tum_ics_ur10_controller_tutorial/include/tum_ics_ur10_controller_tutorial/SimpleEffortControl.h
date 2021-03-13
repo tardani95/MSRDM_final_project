@@ -7,6 +7,20 @@
 namespace tum_ics_ur_robot_lli {
     namespace RobotControllers {
 
+        enum ControlMode{
+            JS = 0,
+            CS,
+            MIXED,
+            IMPEDANCE,
+            UNKNOWN = -1,
+        };
+
+        enum ControlTask{
+            MOVE_OUT_SINGULARITY = 0,
+            MOVE_DOWN_AND_POINT_UPWARDS,
+            MOVE_IN_CIRCLE,
+        };
+
         class SimpleEffortControl : public ControlEffort {
         private:
             bool m_startFlag;
@@ -33,6 +47,8 @@ namespace tum_ics_ur_robot_lli {
 
             Vector6d m_sumDeltaQ;
             Vector6d m_sumDeltaQp;
+
+            ControlMode m_control_mode;
 
             double m_controlPeriod; //[s]
 
