@@ -135,6 +135,93 @@ namespace tum_ics_ur_robot_lli {
             return true;
         }
 
+        Vector6d SimpleEffortControl::tf2pose(ow::HomogeneousTransformation T){
+            Vector4d zero4d;
+            zero4d.setZero();
+            Vector3d vX = (T * zero4d).head(3);
+            Matrix3d rot_mat = T.matrix().topLeftCorner(3, 3);
+            Vector3d euler_angles = rot_mat.eulerAngles(2, 1, 0);
+            Vector6d pose;
+            pose.topRows(3) = vX;
+            pose.bottomRows(3) = euler_angles;
+
+            return pose;
+        }
+
+        Vector6d SimpleEffortControl::tau(const RobotTime &time, 
+                                          const JointState &current_js,
+                                          const Vector6d &vQXrp,
+                                          const Vector6d &vQXrpp,
+                                          const Vector6d &vQXp){
+            // control torque
+            Vector6d tau;
+            tau.setZero();
+
+
+            // robot model
+            Vector6d QXrp, QXrpp, QXp, Q, Qp;
+            
+            QXrp = vQXrp;
+            QXrpp = vQXrpp;
+
+            QXp = vQXp;
+
+            Q = current_js.q;
+            Qp = current_js.qp;
+
+            ur::UR10Model::Regressor Yr;
+            
+            Vector6d Sq, Sqx;
+
+            // controller 
+            Sqx = QXp - QXrp;
+
+            ROS_WARN_STREAM("Sqx =\n" << Sqx);
+
+            Vector6d Qrp, Qrpp;
+            Eigen::Matrix<double,6,6> J_ef_0;
+            PartialPivLU<Tum::Matrix6d> J_ef_0_lu;
+
+            switch (m_control_mode)
+            {
+            case ControlMode::JS: /* joint space */
+                Sq = Sqx;
+                Qrp = QXrp;
+                Qrpp = QXrpp;
+                Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
+                break;
+            
+            case ControlMode::CS: /* cartesian space */
+                J_ef_0 = m_ur10_model.J_ef_0(current_js.q);
+                // Eigen::Matrix<double,3,6> J_ef_0_v = J_ef_0.topRows(3);
+                J_ef_0_lu = J_ef_0.lu();
+                
+                Sq = J_ef_0_lu.solve(Sqx);
+                Qrp = J_ef_0_lu.solve(QXrp);
+                Qrpp = J_ef_0_lu.solve(QXrpp);
+                Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
+                break;
+
+            default:
+                ROS_WARN_STREAM("Using DEFAULT control mode: Joint Space");
+                Sq = Sqx;
+                Qrp = QXrp;
+                Qrpp = QXrpp;
+                Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
+            }
+
+            // calculate torque
+            tau = -m_Kd*Sq + Yr*m_theta;
+
+            // parameter update
+            MatrixXd gamma = MatrixXd::Identity(81,81);
+            gamma *= 0.0002;
+            // parameter vector update
+            m_theta -= gamma * Yr.transpose() * Sq;
+
+            return tau;
+        }
+
         Vector6d SimpleEffortControl::update(const RobotTime &time,
                                              const JointState &current) {
             if (!m_startFlag) {
@@ -148,46 +235,58 @@ namespace tum_ics_ur_robot_lli {
             tau.setZero();
 
             // poly spline
-            VVector6d vQd;
-            vQd = getJointPVT5(m_qStart, m_goal, time.tD(), m_totalTime);
+            VVectorDOFd vQXd;
+
+            // time
+            double ellapsed_time = time.tD();
+
+            if (ellapsed_time < m_totalTime){
+                vQXd = getJointPVT5(m_qStart, m_goal, time.tD(), m_totalTime);
+            }else{
+                vQXd = getJointPVT5(m_qStart, m_goal, time.tD(), m_totalTime);
+            }
+
+            
+            
+
+            VectorDOFd vQX, vQXp;
+            VectorDOFd vQXrp, vQXrpp;
+
+            switch(m_control_mode){
+                case ControlMode::JS:
+                    vQX = current.q;
+                    vQXp = current.qp;
+
+                    break;
+                case ControlMode::CS:
+                    vQX = tf2pose(m_ur10_model.T_ef_0(current.q));
+                    vQXp = m_ur10_model.J_ef_0(current.q) * current.qp;
+
+                    break;
+                default:
+                    ROS_ERROR_STREAM("bad control mode");
+                    break;
+            }
 
             // erros
-            m_DeltaQ = current.q - vQd[0];
-            m_DeltaQp = current.qp - vQd[1];
+            m_DeltaQ = current.q - vQXd[0];
+            m_DeltaQp = current.qp - vQXd[1];
 
             m_sumDeltaQ += m_DeltaQ * m_controlPeriod;
             m_sumDeltaQp += m_DeltaQp * m_controlPeriod;
 
-            // reference
-            JointState js_r;
-            js_r = current;
-            js_r.qp = vQd[1] - m_Kp * m_DeltaQ - m_Ki * m_sumDeltaQ;
-            js_r.qpp = vQd[2] - m_Kp * m_DeltaQp - m_Ki * m_sumDeltaQp;
+            vQXrp = vQXd[1] - m_Kp * m_DeltaQ - m_Ki * m_sumDeltaQ;
+            vQXrpp = vQXd[2] - m_Kp * m_DeltaQp - m_Ki * m_sumDeltaQp;
 
+            // // reference
+            // JointState js_r;
+            // js_r = current;
+            // js_r.qp = vQXd[1] - m_Kp * m_DeltaQ - m_Ki * m_sumDeltaQ;
+            // js_r.qpp = vQXd[2] - m_Kp * m_DeltaQp - m_Ki * m_sumDeltaQp;
 
-            // robot model
-            Vector6d q, qp, qrp, qrpp;
-            q = current.q;
-            qp = current.qp;
-            qrp = js_r.qp;
-            qrpp = js_r.qpp;
+            // torque calculation
+            tau = SimpleEffortControl::tau(time, current, vQXrp, vQXrpp, vQXp);
 
-            ur::UR10Model::Regressor Y = m_ur10_model.regressor(q, qp, qrp, qrpp);
-
-            // Eigen::Affine3d T_ef_0 = m_ur10_model.T_ef_0(q);
-
-            // Eigen::Matrix<double,6,6> J_ef_0 = m_ur10_model.J_ef_0(q);
-
-            // // print something
-            // ROS_WARN_STREAM("T_ef_0=\n" << T_ef_0.matrix());
-            // ROS_WARN_STREAM("J_ef_0=\n" << J_ef_0);
-            ROS_WARN_STREAM("Y=\n" << Y);
-
-
-            // torque
-            Vector6d Sq = current.qp - js_r.qp;
-            tau = -m_Kd * Sq;
-            // tau << 1.0, 50.0, 30.0, 0.5, 0.5, 0.5;
 
             // publish the ControlData (only for debugging)
             tum_ics_ur_robot_msgs::ControlData msg;
@@ -198,8 +297,8 @@ namespace tum_ics_ur_robot_lli {
                 msg.qp[i] = current.qp(i);
                 msg.qpp[i] = current.qpp(i);
 
-                msg.qd[i] = vQd[0](i);
-                msg.qpd[i] = vQd[1](i);
+                msg.qd[i] = vQXd[0](i);
+                msg.qpd[i] = vQXd[1](i);
 
                 msg.Dq[i] = m_DeltaQ(i);
                 msg.Dqp[i] = m_DeltaQp(i);

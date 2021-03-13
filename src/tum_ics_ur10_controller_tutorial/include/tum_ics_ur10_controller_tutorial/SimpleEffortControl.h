@@ -34,7 +34,7 @@ namespace tum_ics_ur_robot_lli {
             ros::Publisher pubCtrlData;
 
             ur::UR10Model m_ur10_model;
-            ur::UR10Model::Parameters m_theta;
+            MatrixXd m_theta;
 
             Matrix6d m_Kp;
             Matrix6d m_Kd;
@@ -67,6 +67,14 @@ namespace tum_ics_ur_robot_lli {
             bool init();
 
             bool start();
+
+            Vector6d tau(const RobotTime &time, 
+                                          const JointState &current_js,
+                                          const Vector6d &vQXrp,
+                                          const Vector6d &vQXrpp,
+                                          const Vector6d &vQXp);
+
+            Vector6d tf2pose(ow::HomogeneousTransformation T);
 
             Vector6d update(const RobotTime &time, const JointState &current);
 
