@@ -24,8 +24,11 @@ namespace tum_ics_ur_robot_lli {
         class SimpleEffortControl : public ControlEffort {
         private:
             bool m_startFlag;
+            bool m_startFlag2;
 
             Vector6d m_qStart;
+            Vector6d m_xStart;
+            Vector6d m_xGoal;
             JointState m_qInit;
             JointState m_qHome;
             JointState m_qPark;

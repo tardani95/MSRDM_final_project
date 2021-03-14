@@ -8,6 +8,7 @@ namespace tum_ics_ur_robot_lli {
         SimpleEffortControl::SimpleEffortControl(double weight, const QString &name)
                 : ControlEffort(name, SPLINE_TYPE, JOINT_SPACE, weight),
                   m_startFlag(false),
+                  m_startFlag2(false),
                   m_Kp(Matrix6d::Zero()),
                   m_Kd(Matrix6d::Zero()),
                   m_Ki(Matrix6d::Zero()),
@@ -229,10 +230,24 @@ namespace tum_ics_ur_robot_lli {
 
         Vector6d SimpleEffortControl::update(const RobotTime &time,
                                              const JointState &current) {
+
             if (!m_startFlag) {
                 m_qStart = current.q;
                 ROS_WARN_STREAM("START [DEG]: \n" << m_qStart.transpose());
-                m_startFlag = true; 
+                m_startFlag = true;
+                m_control_mode = ControlMode::JS;
+            }else if(!m_startFlag2 && time.tD() > m_totalTime) {
+                m_startFlag2 = true;
+                m_sumDeltaQ.setZero();
+                m_sumDeltaQp.setZero();
+                m_xStart = tf2pose(m_ur10_model.T_ef_0(current.q));
+                m_xGoal = m_xStart;
+                m_xGoal[2] = 0.15;
+                m_xGoal.tail(3) << 2.1715, -1.5, 0.9643;
+                m_control_mode = ControlMode::CS;
+
+                ROS_WARN_STREAM("Desired polyline start= \n" << m_xStart);
+                ROS_WARN_STREAM("Desired polyline end= \n" << m_xGoal);
             }
 
             // control torque
@@ -245,27 +260,37 @@ namespace tum_ics_ur_robot_lli {
             // time
             double ellapsed_time = time.tD();
 
-            if (ellapsed_time < m_totalTime){
+            
+            if (m_startFlag && ellapsed_time < m_totalTime){
+                
                 vQXd = getJointPVT5(m_qStart, m_goal, time.tD(), m_totalTime);
-            }else{
-                vQXd = getJointPVT5(m_qStart, m_goal, time.tD(), m_totalTime);
+                
+            }else if (m_startFlag2){
+                Vector6d q_goal;
+                q_goal << 0.0, -1, 2.16, -2.7, -4.8, 0; 
+                ROS_WARN_STREAM("Goal pose from function =\n " << tf2pose(m_ur10_model.T_ef_0(q_goal)));
+                // m_xGoal << 0.683465, 0.17, 0.2, 2.1715, -1.5, 0.9643;
+                vQXd = getJointPVT5(m_xStart, m_xGoal, time.tD()-m_totalTime, m_totalTime);
+                ROS_WARN_STREAM("Desired polyline\nStart: \n" << m_xStart << "\nGoal: \n" << m_xGoal);
+                ROS_WARN_STREAM("Desired polyline\nQXd: \n" << vQXd[0] << "\nQXdp: \n" << vQXd[1]);
             }
 
+            VectorDOFd QXd, QXdp, QXdpp; // desired qd,qdp,qdpp or xd,xdp,xdpp
+            QXd = vQXd[0];
+            QXdp = vQXd[1];
+            QXdpp = vQXd[2];
             
-            
-
-            VectorDOFd vQX, vQXp;
-            VectorDOFd vQXrp, vQXrpp;
+            VectorDOFd QX, QXp; // current q or x
 
             switch(m_control_mode){
                 case ControlMode::JS:
-                    vQX = current.q;
-                    vQXp = current.qp;
+                    QX = current.q;
+                    QXp = current.qp;
 
                     break;
                 case ControlMode::CS:
-                    vQX = tf2pose(m_ur10_model.T_ef_0(current.q));
-                    vQXp = m_ur10_model.J_ef_0(current.q) * current.qp;
+                    QX = tf2pose(m_ur10_model.T_ef_0(current.q));
+                    QXp = m_ur10_model.J_ef_0(current.q) * current.qp;
 
                     break;
                 default:
@@ -274,14 +299,15 @@ namespace tum_ics_ur_robot_lli {
             }
 
             // erros
-            m_DeltaQ = current.q - vQXd[0];
-            m_DeltaQp = current.qp - vQXd[1];
+            m_DeltaQ = QX - QXd;
+            m_DeltaQp = QXp - QXdp;
 
             m_sumDeltaQ += m_DeltaQ * m_controlPeriod;
             m_sumDeltaQp += m_DeltaQp * m_controlPeriod;
 
-            vQXrp = vQXd[1] - m_Kp * m_DeltaQ - m_Ki * m_sumDeltaQ;
-            vQXrpp = vQXd[2] - m_Kp * m_DeltaQp - m_Ki * m_sumDeltaQp;
+            VectorDOFd QXrp, QXrpp; // reference qr or xr
+            QXrp = QXdp - m_Kp * m_DeltaQ - m_Ki * m_sumDeltaQ;
+            QXrpp = QXdpp - m_Kp * m_DeltaQp - m_Ki * m_sumDeltaQp;
 
             // // reference
             // JointState js_r;
@@ -290,7 +316,8 @@ namespace tum_ics_ur_robot_lli {
             // js_r.qpp = vQXd[2] - m_Kp * m_DeltaQp - m_Ki * m_sumDeltaQp;
 
             // torque calculation
-            tau = SimpleEffortControl::tau(time, current, vQXrp, vQXrpp, vQXp);
+            tau = SimpleEffortControl::tau(time, current, QXrp, QXrpp, QXp);
+            ROS_WARN_STREAM("tau=" << tau.transpose());
 
 
             // publish the ControlData (only for debugging)
@@ -312,7 +339,7 @@ namespace tum_ics_ur_robot_lli {
             }
             pubCtrlData.publish(msg);
 
-            // ROS_WARN_STREAM("tau=" << tau.transpose());
+
             return tau;
         }
 
