@@ -319,6 +319,20 @@ namespace tum_ics_ur_robot_lli {
             tau = SimpleEffortControl::tau(time, current, QXrp, QXrpp, QXp);
             ROS_WARN_STREAM("tau=" << tau.transpose());
 
+            Vector6d max_control_effort;
+            max_control_effort << 330, 330, 150, 54, 54, 54;
+
+            for(size_t idx = 0; idx<6; idx++){
+                double tau_idx = tau[idx];
+                double max_tau_idx = max_control_effort[idx]; 
+                if(tau_idx > max_tau_idx){
+                    tau[idx] = max_tau_idx;
+                    // switch on anti-windup
+                    ROS_WARN_STREAM("anti-windup on");
+                }
+            }
+
+            ROS_WARN_STREAM("tau=" << tau.transpose());
 
             // publish the ControlData (only for debugging)
             tum_ics_ur_robot_msgs::ControlData msg;
