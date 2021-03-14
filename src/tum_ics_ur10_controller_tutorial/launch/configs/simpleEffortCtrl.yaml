@@ -1,17 +1,39 @@
 # Gains for the Proportional-Derivative Joint Space Controller
 # P and D gains for each axis.
-simple_effort_ctrl:
+joint_space_ctrl:
   #proportional
   gains_p: [ 50, 612.71801, 612.71801, 150, 40, 5 ]
+  # gains_p: [ 200, 612.71801, 612.71801, 150, 40, 5 ]
 
   #derivative
   gains_d: [ 100, 75, 75, 73, 15, 5 ]
+  # gains_d: [ 200, 75, 75, 73, 15, 5 ]
+
+  #integral
+  # gains_i: [ 0, 0, 0, 0, 0, 0]
+  gains_i: [ 1, 1, 1, 1, 1, 1]
+  # gains_i: [ 5, 5, 5, 5, 5, 5]
+
+  # Desired position in deg [J1, J2, J3, J4, J5, J6], e.g. [90, -45, 30, -70, 40, 40]
+  # Home: [0, -90, 0, -90, 0, 0]
+  goal1: [ 0, -75, 75, 0, 90, 0 ]
+  time: 3.0
+
+cartesian_space_ctrl:
+  #proportional
+  gains_p: [ 50, 612.71801, 612.71801, 1, 1, 1]
+  # gains_p: [ 200, 612.71801, 612.71801, 150, 40, 5 ]
+
+  #derivative
+  gains_d: [ 100, 75, 75, 0.5, 0.5, 0.5 ]
+  # gains_d: [ 200, 75, 75, 73, 15, 5 ]
 
   #integral
   gains_i: [ 0, 0, 0, 0, 0, 0]
+  # gains_i: [ 1, 1, 1, 1, 1, 1]
   # gains_i: [ 5, 5, 5, 5, 5, 5]
 
   # Desired position in deg [J1, J2, J3, J4, J5, J6], e.g. [90, -45, 30, -70, 40, 40]
   # Home: [0, -90, 0, -90, 0, 0]
   goal1: [ 0, -90, 90, 0, 90, 0 ]
-  time: 5.0
+  time: 3.0

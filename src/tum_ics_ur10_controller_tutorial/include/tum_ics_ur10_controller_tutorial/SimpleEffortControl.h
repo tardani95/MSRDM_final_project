@@ -42,6 +42,15 @@ namespace tum_ics_ur_robot_lli {
             Matrix6d m_Kp;
             Matrix6d m_Kd;
             Matrix6d m_Ki;
+
+            Matrix6d m_JS_Kp;
+            Matrix6d m_JS_Kd;
+            Matrix6d m_JS_Ki;
+
+            Matrix6d m_CS_Kp;
+            Matrix6d m_CS_Kd;
+            Matrix6d m_CS_Ki;
+            
             Vector6d m_goal;
             double m_totalTime;
 
@@ -67,6 +76,8 @@ namespace tum_ics_ur_robot_lli {
             void setQPark(const JointState &qpark);
 
         private:
+            bool initControllerGains(std::string ns, Matrix6d& p_Kd, Matrix6d& p_Kp, Matrix6d& p_Ki);
+
             bool init();
 
             bool start();

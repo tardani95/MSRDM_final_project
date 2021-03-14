@@ -12,6 +12,12 @@ namespace tum_ics_ur_robot_lli {
                   m_Kp(Matrix6d::Zero()),
                   m_Kd(Matrix6d::Zero()),
                   m_Ki(Matrix6d::Zero()),
+                  m_JS_Kp(Matrix6d::Zero()),
+                  m_JS_Kd(Matrix6d::Zero()),
+                  m_JS_Ki(Matrix6d::Zero()),
+                  m_CS_Kp(Matrix6d::Zero()),
+                  m_CS_Kd(Matrix6d::Zero()),
+                  m_CS_Ki(Matrix6d::Zero()),
                   m_goal(Vector6d::Zero()),
                   m_totalTime(100.0),
                   m_DeltaQ(Vector6d::Zero()),
@@ -45,16 +51,15 @@ namespace tum_ics_ur_robot_lli {
             m_qPark = qpark;
         }
 
-        bool SimpleEffortControl::init() {
-            ROS_WARN_STREAM("SimpleEffortControl::init");
-
+        bool SimpleEffortControl::initControllerGains(std::string t_ns, Matrix6d& p_Kd, Matrix6d& p_Kp, Matrix6d& p_Ki){
+            
             std::vector<double> vec;
 
             // check namespace
-            std::string ns = "~simple_effort_ctrl";
+            std::string ns = "~" + t_ns;
             if (!ros::param::has(ns)) {
                 ROS_ERROR_STREAM(
-                        "SimpleEffortControl init(): Control gains not defined in:" << ns);
+                        "SimpleEffortControl init(): "<< t_ns <<" gains not defined in:" << ns);
                 m_error = true;
                 return false;
             }
@@ -67,9 +72,9 @@ namespace tum_ics_ur_robot_lli {
                 return false;
             }
             for (size_t i = 0; i < STD_DOF; i++) {
-                m_Kd(i, i) = vec[i];
+                p_Kd(i, i) = vec[i];
             }
-            ROS_WARN_STREAM("Kd: \n" << m_Kd);
+            ROS_WARN_STREAM(t_ns <<" Kd: \n" << p_Kd);
 
             // P GAINS
             ros::param::get(ns + "/gains_p", vec);
@@ -79,9 +84,9 @@ namespace tum_ics_ur_robot_lli {
                 return false;
             }
             for (int i = 0; i < STD_DOF; i++) {
-                m_Kp(i, i) = vec[i] / m_Kd(i, i);
+                p_Kp(i, i) = vec[i] / p_Kd(i, i);
             }
-            ROS_WARN_STREAM("Kp: \n" << m_Kp);
+            ROS_WARN_STREAM(t_ns <<" Kp: \n" << p_Kp);
 
             // I GAINS
             ros::param::get(ns + "/gains_i", vec);
@@ -91,10 +96,40 @@ namespace tum_ics_ur_robot_lli {
                 return false;
             }
             for (size_t i = 0; i < STD_DOF; i++) {
-                m_Ki(i, i) = vec[i];
+                p_Ki(i, i) = vec[i];
             }
-            ROS_WARN_STREAM("Ki: \n" << m_Ki);
-            
+            ROS_WARN_STREAM(t_ns <<" Ki: \n" << p_Ki);
+
+            return true;
+        }
+
+        bool SimpleEffortControl::init() {
+            ROS_WARN_STREAM("SimpleEffortControl::init");
+
+            if (!initControllerGains("joint_space_ctrl", m_JS_Kd, m_JS_Kp, m_JS_Ki)){
+                ROS_ERROR_STREAM(
+                        "SimpleEffortControl init(): joint_space_ctrl could not be initialized");
+                m_error = true;
+                return false;
+            }
+
+            if (!initControllerGains("cartesian_space_ctrl", m_CS_Kd, m_CS_Kp, m_CS_Ki)){
+                ROS_ERROR_STREAM(
+                        "SimpleEffortControl init(): joint_space_ctrl could not be initialized");
+                m_error = true;
+                return false;
+            }
+
+            std::vector<double> vec;
+
+            // check namespace
+            std::string ns = "~joint_space_ctrl";
+            if (!ros::param::has(ns)) {
+                ROS_ERROR_STREAM(
+                        "SimpleEffortControl init(): gains not defined in:" << ns);
+                m_error = true;
+                return false;
+            }            
 
             // GOAL
             ros::param::get(ns + "/goal1", vec);
@@ -236,6 +271,11 @@ namespace tum_ics_ur_robot_lli {
                 ROS_WARN_STREAM("START [DEG]: \n" << m_qStart.transpose());
                 m_startFlag = true;
                 m_control_mode = ControlMode::JS;
+
+                m_Kp = m_JS_Kp;
+                m_Kd = m_JS_Kd;
+                m_Ki = m_JS_Ki;
+
             }else if(!m_startFlag2 && time.tD() > m_totalTime) {
                 m_startFlag2 = true;
                 m_sumDeltaQ.setZero();
@@ -245,6 +285,10 @@ namespace tum_ics_ur_robot_lli {
                 m_xGoal[2] = 0.15;
                 m_xGoal.tail(3) << 2.1715, -1.5, 0.9643;
                 m_control_mode = ControlMode::CS;
+
+                m_Kp = m_CS_Kp;
+                m_Kd = m_CS_Kd;
+                m_Ki = m_CS_Ki;
 
                 ROS_WARN_STREAM("Desired polyline start= \n" << m_xStart);
                 ROS_WARN_STREAM("Desired polyline end= \n" << m_xGoal);
@@ -351,7 +395,7 @@ namespace tum_ics_ur_robot_lli {
 
                 msg.torques[i] = current.tau(i);
             }
-            pubCtrlData.publish(msg);
+            // pubCtrlData.publish(msg);
 
 
             return tau;
