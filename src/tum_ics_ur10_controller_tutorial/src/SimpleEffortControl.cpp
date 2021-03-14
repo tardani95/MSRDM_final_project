@@ -84,7 +84,7 @@ namespace tum_ics_ur_robot_lli {
                 return false;
             }
             for (int i = 0; i < STD_DOF; i++) {
-                p_Kp(i, i) = vec[i] / p_Kd(i, i);
+                p_Kp(i, i) = vec[i];
             }
             ROS_WARN_STREAM(t_ns <<" Kp: \n" << p_Kp);
 
