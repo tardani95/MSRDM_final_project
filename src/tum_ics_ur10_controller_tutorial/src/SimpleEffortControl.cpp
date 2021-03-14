@@ -138,6 +138,7 @@ namespace tum_ics_ur_robot_lli {
         Vector6d SimpleEffortControl::tf2pose(ow::HomogeneousTransformation T){
             Vector4d zero4d;
             zero4d.setZero();
+            zero4d[3] = 1.0;
             Vector3d vX = (T * zero4d).head(3);
             Matrix3d rot_mat = T.matrix().topLeftCorner(3, 3);
             Vector3d euler_angles = rot_mat.eulerAngles(2, 1, 0);
