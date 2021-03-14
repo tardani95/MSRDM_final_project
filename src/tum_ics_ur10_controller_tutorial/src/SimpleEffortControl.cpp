@@ -151,9 +151,9 @@ namespace tum_ics_ur_robot_lli {
 
         Vector6d SimpleEffortControl::tau(const RobotTime &time, 
                                           const JointState &current_js,
-                                          const Vector6d &vQXrp,
-                                          const Vector6d &vQXrpp,
-                                          const Vector6d &vQXp){
+                                          const Vector6d &t_QXrp,
+                                          const Vector6d &t_QXrpp,
+                                          const Vector6d &t_QXp){
             // control torque
             Vector6d tau;
             tau.setZero();
@@ -162,10 +162,10 @@ namespace tum_ics_ur_robot_lli {
             // robot model
             Vector6d QXrp, QXrpp, QXp, Q, Qp;
             
-            QXrp = vQXrp;
-            QXrpp = vQXrpp;
+            QXrp = t_QXrp;
+            QXrpp = t_QXrpp;
 
-            QXp = vQXp;
+            QXp = t_QXp;
 
             Q = current_js.q;
             Qp = current_js.qp;
@@ -176,8 +176,6 @@ namespace tum_ics_ur_robot_lli {
 
             // controller 
             Sqx = QXp - QXrp;
-
-            ROS_WARN_STREAM("Sqx =\n" << Sqx);
 
             Vector6d Qrp, Qrpp;
             Eigen::Matrix<double,6,6> J_ef_0;
@@ -195,11 +193,16 @@ namespace tum_ics_ur_robot_lli {
             case ControlMode::CS: /* cartesian space */
                 J_ef_0 = m_ur10_model.J_ef_0(current_js.q);
                 // Eigen::Matrix<double,3,6> J_ef_0_v = J_ef_0.topRows(3);
+                ROS_WARN_STREAM("Jef_0=\n" << J_ef_0);
                 J_ef_0_lu = J_ef_0.lu();
                 
                 Sq = J_ef_0_lu.solve(Sqx);
                 Qrp = J_ef_0_lu.solve(QXrp);
                 Qrpp = J_ef_0_lu.solve(QXrpp);
+                ROS_WARN_STREAM("Sq=\n" << Sq);
+                ROS_WARN_STREAM("Qrp=\n" << Qrp);
+                ROS_WARN_STREAM("Qrpp=\n" << Qrpp);
+
                 Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
                 break;
 
@@ -211,6 +214,7 @@ namespace tum_ics_ur_robot_lli {
                 Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
             }
 
+            // ROS_WARN_STREAM("Sq =\n" << Sq);
             // calculate torque
             tau = -m_Kd*Sq + Yr*m_theta;
 
