@@ -16,6 +16,8 @@
         "streambuf": "cpp",
         "type_traits": "cpp",
         "tuple": "cpp",
-        "*.txx": "cpp"
+        "*.txx": "cpp",
+        "string_view": "cpp",
+        "cmath": "cpp"
     }
 }

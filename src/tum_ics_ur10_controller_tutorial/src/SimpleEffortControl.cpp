@@ -229,15 +229,15 @@ namespace tum_ics_ur_robot_lli {
             case ControlMode::CS: /* cartesian space */
                 J_ef_0 = m_ur10_model.J_ef_0(current_js.q);
                 // Eigen::Matrix<double,3,6> J_ef_0_v = J_ef_0.topRows(3);
-                ROS_WARN_STREAM("Jef_0=\n" << J_ef_0);
+                // ROS_WARN_STREAM("Jef_0=\n" << J_ef_0);
                 J_ef_0_lu = J_ef_0.lu();
                 
                 Sq = J_ef_0_lu.solve(Sqx);
                 Qrp = J_ef_0_lu.solve(QXrp);
                 Qrpp = J_ef_0_lu.solve(QXrpp);
-                ROS_WARN_STREAM("Sq=\n" << Sq);
-                ROS_WARN_STREAM("Qrp=\n" << Qrp);
-                ROS_WARN_STREAM("Qrpp=\n" << Qrpp);
+                ROS_WARN_STREAM("Sq=\n" << Sq.transpose());
+                ROS_WARN_STREAM("Qrp=\n" << Qrp.transpose());
+                ROS_WARN_STREAM("Qrpp=\n" << Qrpp.transpose());
 
                 Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
                 break;
@@ -276,13 +276,13 @@ namespace tum_ics_ur_robot_lli {
                 m_Kd = m_JS_Kd;
                 m_Ki = m_JS_Ki;
 
-            }else if(!m_startFlag2 && time.tD() > m_totalTime) {
+            }else if(!m_startFlag2 && time.tD() > m_totalTime - 0.2) {
                 m_startFlag2 = true;
                 m_sumDeltaQ.setZero();
                 m_sumDeltaQp.setZero();
                 m_xStart = tf2pose(m_ur10_model.T_ef_0(current.q));
                 m_xGoal = m_xStart;
-                m_xGoal[2] = 0.15;
+                // m_xGoal[2] = 0.15;
                 m_xGoal.tail(3) << 2.1715, -1.5, 0.9643;
                 m_control_mode = ControlMode::CS;
 
@@ -290,8 +290,8 @@ namespace tum_ics_ur_robot_lli {
                 m_Kd = m_CS_Kd;
                 m_Ki = m_CS_Ki;
 
-                ROS_WARN_STREAM("Desired polyline start= \n" << m_xStart);
-                ROS_WARN_STREAM("Desired polyline end= \n" << m_xGoal);
+                ROS_INFO_STREAM("Desired polyline start= \n" << m_xStart.transpose());
+                ROS_INFO_STREAM("Desired polyline end= \n" << m_xGoal.transpose());
             }
 
             // control torque
@@ -312,11 +312,11 @@ namespace tum_ics_ur_robot_lli {
             }else if (m_startFlag2){
                 Vector6d q_goal;
                 q_goal << 0.0, -1, 2.16, -2.7, -4.8, 0; 
-                ROS_WARN_STREAM("Goal pose from function =\n " << tf2pose(m_ur10_model.T_ef_0(q_goal)));
+                ROS_WARN_STREAM("Goal pose from function = " << tf2pose(m_ur10_model.T_ef_0(q_goal)).transpose());
                 // m_xGoal << 0.683465, 0.17, 0.2, 2.1715, -1.5, 0.9643;
                 vQXd = getJointPVT5(m_xStart, m_xGoal, time.tD()-m_totalTime, m_totalTime);
-                ROS_WARN_STREAM("Desired polyline\nStart: \n" << m_xStart << "\nGoal: \n" << m_xGoal);
-                ROS_WARN_STREAM("Desired polyline\nQXd: \n" << vQXd[0] << "\nQXdp: \n" << vQXd[1]);
+                ROS_WARN_STREAM("Desired polyline\nStart: " << m_xStart.transpose() << "\nGoal: " << m_xGoal.transpose());
+                ROS_WARN_STREAM("Desired polyline\nQXd: " << vQXd[0].transpose() << "\nQXdp: " << vQXd[1].transpose());
             }
 
             VectorDOFd QXd, QXdp, QXdpp; // desired qd,qdp,qdpp or xd,xdp,xdpp
@@ -361,7 +361,7 @@ namespace tum_ics_ur_robot_lli {
 
             // torque calculation
             tau = SimpleEffortControl::tau(time, current, QXrp, QXrpp, QXp);
-            ROS_WARN_STREAM("tau=" << tau.transpose());
+            // ROS_WARN_STREAM("tau=" << tau.transpose());
 
             Vector6d max_control_effort;
             max_control_effort << 330, 330, 150, 54, 54, 54;

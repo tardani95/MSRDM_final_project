@@ -18,7 +18,7 @@ joint_space_ctrl:
   # Desired position in deg [J1, J2, J3, J4, J5, J6], e.g. [90, -45, 30, -70, 40, 40]
   # Home: [0, -90, 0, -90, 0, 0]
   goal1: [ 0, -75, 75, 0, 90, 0 ]
-  time: 3.0
+  time: 10.0
 
 cartesian_space_ctrl:
   # [x y z, rx, ry, rz]
