@@ -73,7 +73,7 @@ namespace RobotControllers {
             double getTaskTime();
             
             ControlTask getCurrentTask();
-            void changeTask(ControlTask next_task, double task_time, double current_time, Vector6d& sumDq, Vector6d& sumDqp, Vector6d& antiWindUp);
+            void changeTask(ControlTask next_task, double task_time, double current_time);
             void switchControlGains();
             ControlMode getControlMode();
             void setControlMode(ControlMode new_control_mode);

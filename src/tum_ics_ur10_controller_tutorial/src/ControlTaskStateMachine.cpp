@@ -102,15 +102,10 @@ namespace RobotControllers {
 
     void ControlTaskStateMachine::changeTask(ControlTask next_task, 
                                              double task_time,
-                                             double current_time,
-                                             Vector6d& sumDq, Vector6d& sumDqp, Vector6d& antiWindUp){
+                                             double current_time){
         t_start = current_time;
         t_end = task_time;
         task = next_task;
-
-        sumDq.setZero();
-        sumDqp.setZero();
-        antiWindUp.setOnes();
 
         switch(task){
             case ControlTask::BREAK:{

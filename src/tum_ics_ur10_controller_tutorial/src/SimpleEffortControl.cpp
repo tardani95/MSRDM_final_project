@@ -451,6 +451,10 @@ namespace tum_ics_ur_robot_lli {
                 Xdp.setZero();
                 Xdpp.setZero();
 
+                m_sumDeltaQ.setZero();
+                m_sumDeltaQp.setZero();
+                m_anti_windup.setOnes();
+
                 switch(m_ct_sm.getControlMode()){
                 case ControlMode::JS:
                         QXd = Qd;
