@@ -198,6 +198,17 @@ namespace tum_ics_ur_robot_lli {
                 m_circ_traj_radius(i) = vec[i];
             }
 
+            // phase
+            ros::param::get(ns + ns_circle_traj + "/phase", vec);
+            if (vec.size() < 3) {
+                ROS_ERROR_STREAM("circle_traj/phase: wrong number of dimensions:" << vec.size());
+                m_error = true;
+                return false;
+            }
+            for (int i = 0; i < 3; i++) {
+                m_circ_traj_phase_shift(i) = vec[i];
+            }
+
             // frequency
             ros::param::get(ns + ns_circle_traj + "/frequency", vec);
             if (vec.size() < 3) {
@@ -247,9 +258,11 @@ namespace tum_ics_ur_robot_lli {
             m_qNonSing = DEG2RAD(m_qNonSing);
             ROS_WARN_STREAM("Non-Singular Joint State [RAD]: " << m_qNonSing.transpose());
 
+            m_circ_traj_phase_shift = DEG2RAD(m_circ_traj_phase_shift);
             ROS_WARN_STREAM("Circle Trajectory parameters \
                  \nCenter in frame{0} [m]: " << m_circ_traj_center.transpose() <<
                                              "\nRadius [m]: " << m_circ_traj_radius.transpose() <<
+                                             "\nPhase Shift [rad]: "<< m_circ_traj_phase_shift.transpose() <<
                                              "\nFrequency [rad/s]: " << m_circ_traj_frequency.transpose());
 
             // initalize the adaptive robot model parameters
@@ -386,6 +399,23 @@ namespace tum_ics_ur_robot_lli {
             return tau;
         }
 
+        VVector3d SimpleEffortControl::sinusoid_traj_gen(const Vector3d amp, const Vector3d w, const Vector3d phase_shift, const Vector3d zero_offset, double time){
+            Vector3d Xd, Xdp, Xdpp;
+
+            Vector3d phi = w * time + phase_shift;
+            Xd = zero_offset.array() +       amp.array() * phi.array().sin().array();
+            Xdp =                w.array() * amp.array() * phi.array().cos().array();
+            Xdpp = -1 * w.array().square() * amp.array() * phi.array().sin().array();
+            
+            VVector3d Xd_Xdp_Xdpp;
+            Xd_Xdp_Xdpp.reserve(3);
+            Xd_Xdp_Xdpp.push_back(Xd);
+            Xd_Xdp_Xdpp.push_back(Xdp);
+            Xd_Xdp_Xdpp.push_back(Xdpp);
+
+            return Xd_Xdp_Xdpp;
+        }
+
         Vector6d SimpleEffortControl::update(const RobotTime &time,
                                              const JointState &current) {
 
@@ -468,7 +498,7 @@ namespace tum_ics_ur_robot_lli {
 
                     if (!m_ct_sm.isRunning(ellapsed_time)) {
                         // TODO adjust time
-                        double task_time = 20.0;
+                        double task_time = 6.0;
                         m_ct_sm.changeTask(ControlTask::MOVE_DOWN_AND_ROTATE_UPWARDS, task_time, ellapsed_time);
                         state_changed = true;
 
@@ -476,7 +506,7 @@ namespace tum_ics_ur_robot_lli {
                         m_xGoal = m_xStart;
 
                         // move down
-                        m_xGoal[2] = 0.1;
+                        m_xGoal[2] = 0.2;
 
                         // rotate upwards (euler angles ZYX)
                         // m_xGoal.tail(3) << 2.1715, -1.5, 0.9643;
@@ -506,7 +536,7 @@ namespace tum_ics_ur_robot_lli {
 
                     if (!m_ct_sm.isRunning(ellapsed_time)) {
                         // TODO adjust time
-                        double task_time = 100.0;
+                        double task_time = m_totalTime;
                         m_ct_sm.changeTask(ControlTask::MOVE_IN_CIRCLE_POINT_UPWARDS, task_time, ellapsed_time);
                         state_changed = true;
 
@@ -518,13 +548,22 @@ namespace tum_ics_ur_robot_lli {
                     break;
 
                 case ControlTask::MOVE_IN_CIRCLE_POINT_UPWARDS: {
+
+                    VVector3d Xpd_Xpdp_Xpdpp = sinusoid_traj_gen(m_circ_traj_radius,m_circ_traj_frequency, m_circ_traj_phase_shift, m_circ_traj_center, m_ct_sm.manouverTime(ellapsed_time));
+
                     QXd.setZero();
                     QXdp.setZero();
                     QXdpp.setZero();
+                    QXd.head(3) = Xpd_Xpdp_Xpdpp[0];
+                    QXdp.head(3) = Xpd_Xpdp_Xpdpp[1];
+                    QXdpp.head(3) = Xpd_Xpdp_Xpdpp[2];
 
                     Xd.setZero();
                     Xdp.setZero();
                     Xdpp.setZero();
+                    Xd.head(3) = Xpd_Xpdp_Xpdpp[0];
+                    Xdp.head(3) = Xpd_Xpdp_Xpdpp[1];
+                    Xdpp.head(3) = Xpd_Xpdp_Xpdpp[2];
 
                     if (!m_ct_sm.isRunning(ellapsed_time)) {
                         // TODO adjust time

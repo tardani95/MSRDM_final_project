@@ -20,6 +20,7 @@ namespace tum_ics_ur_robot_lli {
 
             Vector3d m_circ_traj_center;
             Vector3d m_circ_traj_radius;
+            Vector3d m_circ_traj_phase_shift;
             Vector3d m_circ_traj_frequency;
 
             Vector6d m_qStart;
@@ -108,6 +109,8 @@ namespace tum_ics_ur_robot_lli {
             Vector6d antiWindUp(Vector6d tau);
 
             Vector6d tf2pose(ow::HomogeneousTransformation T);
+
+            VVector3d sinusoid_traj_gen(const Vector3d amp, const Vector3d w, const Vector3d phase_shift, const Vector3d zero_offset, double time);
 
             Vector6d update(const RobotTime &time, const JointState &current);
 
