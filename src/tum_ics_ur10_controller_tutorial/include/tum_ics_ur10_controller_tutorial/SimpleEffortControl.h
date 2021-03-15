@@ -54,8 +54,9 @@ namespace tum_ics_ur_robot_lli {
             Vector6d m_sumDeltaQ;
             Vector6d m_sumDeltaQp;
 
-            ControlTaskStateMachine m_control_task_sm;
+            ControlTaskStateMachine m_ct_sm;
 
+            const Vector6d c_max_control_effort;
             double m_controlPeriod; //[s]
 
         public:

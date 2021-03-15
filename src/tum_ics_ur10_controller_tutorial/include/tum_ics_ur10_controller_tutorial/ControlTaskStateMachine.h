@@ -49,6 +49,14 @@ namespace RobotControllers {
             Matrix6d m_CS_Kd;
             Matrix6d m_CS_Ki;
 
+            Matrix6d m_IM_Kp;
+            Matrix6d m_IM_Kd;
+            Matrix6d m_IM_Ki;
+
+            Matrix6d m_MX_Kp;
+            Matrix6d m_MX_Kd;
+            Matrix6d m_MX_Ki;
+
         /* -------------- methods ----------- */
         public:
             ControlTaskStateMachine();
@@ -56,13 +64,17 @@ namespace RobotControllers {
             ~ControlTaskStateMachine();
 
             void initControllerGains(ControlMode cm, Matrix6d Kp, Matrix6d Kd, Matrix6d Ki);
+            Matrix6d getKp();
+            Matrix6d getKd();
+            Matrix6d getKi();
 
             bool isRunning(double current_time);
             double manouverTime(double current_time);
             double getTaskTime();
             
             ControlTask getCurrentTask();
-            void changeTask(ControlTask next_task, double task_time, double current_time);
+            void changeTask(ControlTask next_task, double task_time, double current_time, Vector6d& sumDq, Vector6d& sumDqp, Vector6d& antiWindUp);
+            void switchControlGains();
             ControlMode getControlMode();
             void setControlMode(ControlMode new_control_mode);
 
