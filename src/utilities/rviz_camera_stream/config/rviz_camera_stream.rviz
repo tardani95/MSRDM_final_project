@@ -6,12 +6,9 @@ Panels:
       Expanded:
         - /TF1
         - /TF1/Frames1
-        - /TF1/Frames1/dh_arm_joint_01
         - /MarkerArray1
         - /MarkerArray2
         - /MarkerArray3
-        - /Path3
-        - /Path4
       Splitter Ratio: 0.5124481320381165
     Tree Height: 548
   - Class: rviz/Selection
@@ -159,6 +156,8 @@ Visualization Manager:
         Map: true
         MarkerArray: true
         Path: true
+        Path - des_traj: true
+        Path - ef_traj: true
         Pose: true
         RobotModel: true
         TF: true
@@ -349,7 +348,7 @@ Visualization Manager:
       Length: 0.30000001192092896
       Line Style: Lines
       Line Width: 0.029999999329447746
-      Name: Path
+      Name: Path - des_traj
       Offset:
         X: 0
         Y: 0
@@ -372,7 +371,7 @@ Visualization Manager:
       Length: 0.30000001192092896
       Line Style: Lines
       Line Width: 0.029999999329447746
-      Name: Path
+      Name: Path - ef_traj
       Offset:
         X: 0
         Y: 0
@@ -413,25 +412,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 2.3897042274475098
+      Distance: 2.8313934803009033
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.09345304220914841
-        Y: 0.1422385275363922
-        Z: 0.0850227102637291
+        X: -0.4613978862762451
+        Y: 0.14383554458618164
+        Z: 0.022885318845510483
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.984796404838562
+      Pitch: 0.734796404838562
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.360360860824585
+      Yaw: 1.680363416671753
     Saved: ~
 Window Geometry:
   Displays:

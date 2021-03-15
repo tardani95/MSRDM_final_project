@@ -613,43 +613,52 @@ namespace tum_ics_ur_robot_lli {
                 // path publishing
                 geometry_msgs::PoseStamped des_pose;
                 geometry_msgs::PoseStamped ef_pose;
-                ow::HomogeneousTransformation Tef_0;
+                ow::HomogeneousTransformation Tef_0_current;
+                ow::HomogeneousTransformation Tef_0_desired;
+
+
+                ROS_INFO_STREAM("path publishing");
+            
+                des_pose.header.frame_id = "dh_arm_joint_0";
+                des_pose.header.seq = m_path_publish_ctr;
+                des_pose.header.stamp = ros::Time::now();
+
+                ef_pose.header.frame_id = "dh_arm_joint_0";
+                ef_pose.header.seq = m_path_publish_ctr;
+                ef_pose.header.stamp = ros::Time::now();
+                Tef_0_current = m_ur10_model.T_ef_0(current.q);
+                ef_pose.pose.position.x = Tef_0_current.pos().x();
+                ef_pose.pose.position.y = Tef_0_current.pos().y();
+                ef_pose.pose.position.z = Tef_0_current.pos().z();
 
                 switch (m_ct_sm.getControlMode()) {
                     case ControlMode::JS:
+                        Tef_0_desired = m_ur10_model.T_ef_0(Qd);
+                        des_pose.pose.position.x = Tef_0_desired.pos().x();
+                        des_pose.pose.position.y = Tef_0_desired.pos().y();
+                        des_pose.pose.position.z = Tef_0_desired.pos().z();
 
                         break;
                     case ControlMode::CS:
-
-                        ROS_INFO_STREAM("path publishing");
-                    
-                        des_pose.header.frame_id = "dh_arm_joint_0";
-                        des_pose.header.seq = m_path_publish_ctr;
-                        des_pose.header.stamp = ros::Time::now();
                         des_pose.pose.position.x = Xd[0];
                         des_pose.pose.position.y = Xd[1];
                         des_pose.pose.position.z = Xd[2];
-                        path_desired_msg.poses.push_back(des_pose);
-                        path_desired_msg.header.stamp = ros::Time::now();
-                        pubCartPath.publish(path_desired_msg);
 
-                        ef_pose.header.frame_id = "dh_arm_joint_0";
-                        ef_pose.header.seq = m_path_publish_ctr;
-                        ef_pose.header.stamp = ros::Time::now();
-                        Tef_0 = m_ur10_model.T_ef_0(current.q);
-                        ef_pose.pose.position.x = Tef_0.pos().x();
-                        ef_pose.pose.position.y = Tef_0.pos().y();
-                        ef_pose.pose.position.z = Tef_0.pos().z();
-                        path_ef_msg.poses.push_back(ef_pose);
-                        path_ef_msg.header.stamp = ros::Time::now();
-                        pubEFPath.publish(path_ef_msg);
-
-                        m_path_publish_ctr++;
                         break;
                     default:
                         ROS_ERROR_STREAM("bad control mode");
                         break;
                 }
+
+                path_desired_msg.poses.push_back(des_pose);
+                path_desired_msg.header.stamp = ros::Time::now();
+                pubCartPath.publish(path_desired_msg);
+
+                path_ef_msg.poses.push_back(ef_pose);
+                path_ef_msg.header.stamp = ros::Time::now();
+                pubEFPath.publish(path_ef_msg);
+
+                m_path_publish_ctr++;
 
                 if (path_desired_msg.poses.size() > 150) {
                     // remove the first 10 elements
