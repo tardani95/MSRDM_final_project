@@ -415,7 +415,7 @@ namespace tum_ics_ur_robot_lli {
             /* ============= first time run ============== */
             if (!m_startFlag) {
                 // initialize state_space
-                m_ct_sm.changeTask(ControlTask::MOVE_OUT_SINGULARITY,4.0,ellapsed_time);
+                m_ct_sm.changeTask(ControlTask::MOVE_OUT_SINGULARITY, m_NonSingTime, ellapsed_time);
 
                 m_startFlag = true;
 
@@ -439,7 +439,7 @@ namespace tum_ics_ur_robot_lli {
                     if(!m_ct_sm.isRunning(ellapsed_time)){
                         // TODO adjust time
                         double task_time = 5.0;
-                        m_ct_sm.changeTask(ControlTask::MOVE_OUT_SINGULARITY,task_time,ellapsed_time);
+                        m_ct_sm.changeTask(ControlTask::MOVE_OUT_SINGULARITY, task_time, ellapsed_time);
                         state_changed = true;
                         m_qStart = current.q;
 
