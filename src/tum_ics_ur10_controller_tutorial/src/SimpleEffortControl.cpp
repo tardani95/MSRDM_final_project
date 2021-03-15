@@ -56,6 +56,15 @@ namespace tum_ics_ur_robot_lli {
             m_qPark = qpark;
         }
 
+        void SimpleEffortControl::targetPositionUpdateCallback(const object_msgs::Objects msg){
+            // ROS_WARN_STREAM("Objects: \n" << msg);
+            geometry_msgs::Point target_x = msg.objects[0].position.position;
+            m_target_pos[0] = target_x.x;
+            m_target_pos[1] = target_x.y;
+            m_target_pos[2] = target_x.z;
+            // ROS_WARN_STREAM("Target position [m]: " << m_target_pos.transpose());
+        }
+
         bool SimpleEffortControl::initControllerGains(std::string t_ns, Matrix6d& p_Kd, Matrix6d& p_Kp, Matrix6d& p_Ki){
             
             std::vector<double> vec;

@@ -5,6 +5,7 @@
 #include <tum_ics_ur10_controller_tutorial/ControlTaskStateMachine.h>
 #include <ur10_robot_model/model_ur10.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <object_msgs/Objects.h>
 
 namespace tum_ics_ur_robot_lli {
     namespace RobotControllers {
@@ -27,6 +28,8 @@ namespace tum_ics_ur_robot_lli {
 
             visualization_msgs::MarkerArray m_marker_array;
 
+            Vector3d m_target_pos;
+            Vector3d m_ef_traj_xd;
 
             ur::UR10Model m_ur10_model;
             MatrixXd m_theta;
@@ -70,6 +73,8 @@ namespace tum_ics_ur_robot_lli {
 
             void setQPark(const JointState &qpark);
 
+            void targetPositionUpdateCallback(const object_msgs::Objects msg);
+
         private:
             bool initControllerGains(std::string ns, Matrix6d& p_Kd, Matrix6d& p_Kp, Matrix6d& p_Ki);
 
@@ -77,6 +82,7 @@ namespace tum_ics_ur_robot_lli {
 
             bool start();
 
+            
             Vector6d tau(const RobotTime &time, 
                                           const JointState &current_js,
                                           const Vector6d &vQXrp,
