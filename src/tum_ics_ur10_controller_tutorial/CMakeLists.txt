@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   tf_conversions
   object_msgs
+  visualization_msgs
 )
 
 ##############################################################################
@@ -82,6 +83,7 @@ file(GLOB_RECURSE MY_CTRL_INC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} FOLLOW_SYMLIN
 
 add_library(my_robot_control_lli
    src/SimpleEffortControl.cpp
+   src/ControlTaskStateMachine.cpp
    ${MY_CTRL_INC}
 )
 target_link_libraries(my_robot_control_lli

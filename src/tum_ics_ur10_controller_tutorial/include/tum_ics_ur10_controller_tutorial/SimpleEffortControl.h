@@ -2,24 +2,12 @@
 #define UR_ROBOT_LLI_SIMPLEEFFORTCONTROL_H
 
 #include <tum_ics_ur_robot_lli/RobotControllers/ControlEffort.h>
+#include <tum_ics_ur10_controller_tutorial/ControlTaskStateMachine.h>
 #include <ur10_robot_model/model_ur10.h>
+#include <visualization_msgs/MarkerArray.h>
 
 namespace tum_ics_ur_robot_lli {
     namespace RobotControllers {
-
-        enum ControlMode{
-            JS = 0,
-            CS,
-            MIXED,
-            IMPEDANCE,
-            UNKNOWN = -1,
-        };
-
-        enum ControlTask{
-            MOVE_OUT_SINGULARITY = 0,
-            MOVE_DOWN_AND_POINT_UPWARDS,
-            MOVE_IN_CIRCLE,
-        };
 
         class SimpleEffortControl : public ControlEffort {
         private:
@@ -35,6 +23,10 @@ namespace tum_ics_ur_robot_lli {
 
             ros::NodeHandle n;
             ros::Publisher pubCtrlData;
+            ros::Publisher pubTrajMarker;
+
+            visualization_msgs::MarkerArray m_marker_array;
+
 
             ur::UR10Model m_ur10_model;
             MatrixXd m_theta;
@@ -57,10 +49,12 @@ namespace tum_ics_ur_robot_lli {
             Vector6d m_DeltaQ;
             Vector6d m_DeltaQp;
 
+            Vector6d m_anti_windup;
+
             Vector6d m_sumDeltaQ;
             Vector6d m_sumDeltaQp;
 
-            ControlMode m_control_mode;
+            ControlTaskStateMachine m_control_task_sm;
 
             double m_controlPeriod; //[s]
 
