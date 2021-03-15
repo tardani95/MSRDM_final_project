@@ -443,6 +443,31 @@ namespace tum_ics_ur_robot_lli {
                     ROS_ERROR_STREAM("Unknown ControlTask!");
             }
 
+            if(state_changed){
+                Qd = current.q;
+                Qdp.setZero();
+                Qdpp.setZero();
+                Xd = tf2pose(m_ur10_model.T_ef_0(current.q));
+                Xdp.setZero();
+                Xdpp.setZero();
+
+                switch(m_ct_sm.getControlMode()){
+                case ControlMode::JS:
+                        QXd = Qd;
+                        QXdp = Qdp;
+                        QXdpp = Qdpp;
+                    break;
+                case ControlMode::CS:
+                        QXd = Xd;
+                        QXdp = Xdp;
+                        QXdpp = Xdpp;
+                    break;
+                default:
+                    ROS_ERROR_STREAM("bad control mode");
+                    break;
+                }
+            }
+
             // if(!m_startFlag2 && time.tD() > m_totalTime - 0.2) {
             //     m_startFlag2 = true;
             //     m_sumDeltaQ.setZero();
@@ -451,7 +476,7 @@ namespace tum_ics_ur_robot_lli {
             //     m_xGoal = m_xStart;
             //     // m_xGoal[2] = 0.15;
             //     m_xGoal.tail(3) << 2.1715, -1.5, 0.9643;
-            //     m_control_task_sm.setControlMode(ControlMode::CS);
+            //     m_ct_sm.setControlMode(ControlMode::CS);
 
             //     m_Kp = m_CS_Kp;
             //     m_Kd = m_CS_Kd;
