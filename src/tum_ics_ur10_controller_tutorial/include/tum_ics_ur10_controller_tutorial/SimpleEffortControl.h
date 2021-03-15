@@ -29,6 +29,9 @@ namespace tum_ics_ur_robot_lli {
             visualization_msgs::MarkerArray m_marker_array;
 
             Vector3d m_target_pos;
+            static const size_t m_max_num_obstacles = 4;
+            size_t m_num_obstacles;
+            VVector3d m_vObstacles_pos_0;
             Vector3d m_ef_traj_xd;
 
             ur::UR10Model m_ur10_model;
@@ -73,6 +76,7 @@ namespace tum_ics_ur_robot_lli {
 
             void setQPark(const JointState &qpark);
 
+            void obstaclesPositionUpdateCallback(const object_msgs::Objects msg);
             void targetPositionUpdateCallback(const object_msgs::Objects msg);
 
         private:

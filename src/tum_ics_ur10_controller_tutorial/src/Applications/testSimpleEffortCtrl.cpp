@@ -31,6 +31,8 @@ int main(int argc, char **argv) {
     controller.setQPark(robot.qPark());
 
     ros::Subscriber targetSub = nh.subscribe("target", 10, &tum_ics_ur_robot_lli::RobotControllers::SimpleEffortControl::targetPositionUpdateCallback, &controller);
+    ros::Subscriber obstaclesSub = nh.subscribe("obstacles", 10, &tum_ics_ur_robot_lli::RobotControllers::SimpleEffortControl::obstaclesPositionUpdateCallback, &controller);
+
     // RUN !
     ROS_INFO_STREAM("Start Robot");
     robot.start();

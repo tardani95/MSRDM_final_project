@@ -34,6 +34,7 @@ namespace tum_ics_ur_robot_lli {
 
             pubTrajMarker = n.advertise<visualization_msgs::MarkerArray>("trajectory_markers", 100);         
 
+            m_vObstacles_pos_0.reserve(m_max_num_obstacles);
             
             m_theta = m_ur10_model.parameterInitalGuess();
 
@@ -54,6 +55,27 @@ namespace tum_ics_ur_robot_lli {
 
         void SimpleEffortControl::setQPark(const JointState &qpark) {
             m_qPark = qpark;
+        }
+
+        void SimpleEffortControl::obstaclesPositionUpdateCallback(const object_msgs::Objects msg){
+            // ROS_WARN_STREAM("Objects: \n" << msg);
+
+            // Objects obstacles = msg.objects;
+            m_num_obstacles = msg.objects.size();
+            geometry_msgs::Point obstacle_position;
+            Vector4d tmp_obs_pos = Vector4d::Zero();
+            tmp_obs_pos[3] = 1.0;
+            
+            for(size_t idx=0; idx < m_num_obstacles; idx++){
+            
+                obstacle_position = msg.objects[idx].position.position;
+                tmp_obs_pos[0] = obstacle_position.x;
+                tmp_obs_pos[1] = obstacle_position.y;
+                tmp_obs_pos[2] = obstacle_position.z;
+
+                m_vObstacles_pos_0[idx] = (m_ur10_model.T_B_0() * tmp_obs_pos).head(3);
+                // ROS_WARN_STREAM("Object "<< idx << " homogen position frame0 [m]: " << m_vObstacles_pos_0[idx].transpose());
+            }
         }
 
         void SimpleEffortControl::targetPositionUpdateCallback(const object_msgs::Objects msg){
@@ -193,6 +215,7 @@ namespace tum_ics_ur_robot_lli {
             Vector4d zero4d;
             zero4d.setZero();
             zero4d[3] = 1.0;
+            // Vector3d vX = T.position()
             Vector3d vX = (T * zero4d).head(3);
             Matrix3d rot_mat = T.matrix().topLeftCorner(3, 3);
             Vector3d euler_angles = rot_mat.eulerAngles(2, 1, 0);
