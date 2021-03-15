@@ -83,6 +83,8 @@ namespace tum_ics_ur_robot_lli {
                                           const Vector6d &vQXrpp,
                                           const Vector6d &vQXp);
 
+            Vector6d antiWindUp(Vector6d tau);
+
             Vector6d tf2pose(ow::HomogeneousTransformation T);
 
             Vector6d update(const RobotTime &time, const JointState &current);

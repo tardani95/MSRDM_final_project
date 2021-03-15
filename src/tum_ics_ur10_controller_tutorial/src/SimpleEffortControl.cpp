@@ -272,6 +272,31 @@ namespace tum_ics_ur_robot_lli {
             return tau;
         }
 
+        Vector6d SimpleEffortControl::antiWindUp(Vector6d tau){
+            std::stringstream ss;
+            bool b_anti_windup = false;
+
+            for(size_t idx = 0; idx<6; idx++){
+                double tau_idx = tau[idx];
+                double max_tau_idx = c_max_control_effort[idx]; 
+                if(tau_idx > max_tau_idx){
+                    tau[idx] = max_tau_idx;
+                    // switch on anti-windup
+                    b_anti_windup = true;
+                    ss << idx << ", ";
+                    m_anti_windup[idx] = 0.0;
+                }else{
+                    m_anti_windup[idx] = 1.0;
+                }
+            }
+
+            if(b_anti_windup){
+                ROS_WARN_STREAM("anti-windup on axes: " << ss.str());
+            }
+
+            return tau;
+        }
+
         Vector6d SimpleEffortControl::update(const RobotTime &time,
                                              const JointState &current) {
             
@@ -299,7 +324,7 @@ namespace tum_ics_ur_robot_lli {
             /* ============= first time run ============== */
             if (!m_startFlag) {
                 // initialize state_space
-                m_ct_sm.changeTask(ControlTask::MOVE_OUT_SINGULARITY,4.0,ellapsed_time, m_sumDeltaQ, m_sumDeltaQp, m_anti_windup);
+                m_ct_sm.changeTask(ControlTask::MOVE_OUT_SINGULARITY,4.0,ellapsed_time);
 
                 m_startFlag = true;
 
@@ -323,11 +348,11 @@ namespace tum_ics_ur_robot_lli {
                     if(!m_ct_sm.isRunning(ellapsed_time)){
                         // TODO adjust time
                         double task_time = 5.0;
-                        m_ct_sm.changeTask(ControlTask::MOVE_OUT_SINGULARITY,task_time,ellapsed_time, m_sumDeltaQ, m_sumDeltaQp, m_anti_windup);
+                        m_ct_sm.changeTask(ControlTask::MOVE_OUT_SINGULARITY,task_time,ellapsed_time);
                         state_changed = true;
                         m_qStart = current.q;
 
-                        ROS_INFO_STREAM("State Machine: Move out singularity!\n Task time = " << task_time << "\n Goal [rad] = " << m_goal.transpose());
+                        ROS_WARN_STREAM("State Machine: Move out singularity!\n Task time = " << task_time << "\n Goal [rad] = " << m_goal.transpose());
                     }
                 }                
                 break;
@@ -352,7 +377,7 @@ namespace tum_ics_ur_robot_lli {
                     if(!m_ct_sm.isRunning(ellapsed_time)){
                         // TODO adjust time
                         double task_time = 20.0;
-                        m_ct_sm.changeTask(ControlTask::MOVE_DOWN_AND_ROTATE_UPWARDS, task_time,ellapsed_time, m_sumDeltaQ, m_sumDeltaQp, m_anti_windup);
+                        m_ct_sm.changeTask(ControlTask::MOVE_DOWN_AND_ROTATE_UPWARDS, task_time,ellapsed_time);
                         state_changed = true;
 
                         m_xStart = tf2pose(m_ur10_model.T_ef_0(current.q));
@@ -364,7 +389,7 @@ namespace tum_ics_ur_robot_lli {
                         // rotate upwards (euler angles ZYX)
                         // m_xGoal.tail(3) << 2.1715, -1.5, 0.9643;
 
-                        ROS_INFO_STREAM("State Machine: Move down and rotate EF upwards!\n Task time = " << task_time << "\n Goal [3x m, 3x rad] = " << m_xGoal.transpose());
+                        ROS_WARN_STREAM("State Machine: Move down and rotate EF upwards!\n Task time = " << task_time << "\n Goal [3x m, 3x rad] = " << m_xGoal.transpose());
                     }
                 }
                 break;
@@ -388,12 +413,12 @@ namespace tum_ics_ur_robot_lli {
                     if(!m_ct_sm.isRunning(ellapsed_time)){
                         // TODO adjust time
                         double task_time = 100.0;
-                        m_ct_sm.changeTask(ControlTask::MOVE_IN_CIRCLE_POINT_UPWARDS, task_time,ellapsed_time, m_sumDeltaQ, m_sumDeltaQp, m_anti_windup);
+                        m_ct_sm.changeTask(ControlTask::MOVE_IN_CIRCLE_POINT_UPWARDS, task_time,ellapsed_time);
                         state_changed = true;
 
                         m_xStart = tf2pose(m_ur10_model.T_ef_0(current.q));
 
-                        ROS_INFO_STREAM("State Machine: Move in circle pointing upwards!\n Task time = " << task_time);
+                        ROS_WARN_STREAM("State Machine: Move in circle pointing upwards!\n Task time = " << task_time);
                     }
                 }
                 break;
@@ -410,10 +435,10 @@ namespace tum_ics_ur_robot_lli {
                     if(!m_ct_sm.isRunning(ellapsed_time)){
                         // TODO adjust time
                         double task_time = 2.0;
-                        m_ct_sm.changeTask(ControlTask::BREAK,task_time,ellapsed_time, m_sumDeltaQ, m_sumDeltaQp, m_anti_windup);
+                        m_ct_sm.changeTask(ControlTask::BREAK,task_time,ellapsed_time);
                         state_changed = true;
 
-                        ROS_INFO_STREAM("State Machine: Break and start over!\n Task time = " << task_time);
+                        ROS_WARN_STREAM("State Machine: Break and start over!\n Task time = " << task_time);
                     }
                 }
                 break;
@@ -430,10 +455,10 @@ namespace tum_ics_ur_robot_lli {
                     if(!m_ct_sm.isRunning(ellapsed_time)){
                         // TODO adjust time
                         double task_time = 2.0;
-                        m_ct_sm.changeTask(ControlTask::BREAK,task_time,ellapsed_time, m_sumDeltaQ, m_sumDeltaQp, m_anti_windup);
+                        m_ct_sm.changeTask(ControlTask::BREAK,task_time,ellapsed_time);
                         state_changed = true;
 
-                        ROS_INFO_STREAM("State Machine: Break and start over!\n Task time = " << task_time);
+                        ROS_WARN_STREAM("State Machine: Break and start over!\n Task time = " << task_time);
                     }
                 }
                 break;
@@ -531,29 +556,11 @@ namespace tum_ics_ur_robot_lli {
             // torque calculation
             tau = SimpleEffortControl::tau(time, current, QXrp, QXrpp, QXp);
             // ROS_WARN_STREAM("raw tau = " << tau.transpose());
-
-            std::stringstream ss;
-            bool b_anti_windup = false;
-
-            for(size_t idx = 0; idx<6; idx++){
-                double tau_idx = tau[idx];
-                double max_tau_idx = c_max_control_effort[idx]; 
-                if(tau_idx > max_tau_idx){
-                    tau[idx] = max_tau_idx;
-                    // switch on anti-windup
-                    b_anti_windup = true;
-                    ss << idx << ", ";
-                    m_anti_windup[idx] = 0.0;
-                }else{
-                    m_anti_windup[idx] = 1.0;
-                }
-            }
-
-            if(b_anti_windup){
-                ROS_WARN_STREAM("anti-windup on axes: " << ss.str());
-            }
-
+            
+            // anti-windup
+            tau = SimpleEffortControl::antiWindUp(tau);
             // ROS_WARN_STREAM("max tau = " << tau.transpose());
+
 
             // publish the ControlData (only for debugging)
             tum_ics_ur_robot_msgs::ControlData msg;
