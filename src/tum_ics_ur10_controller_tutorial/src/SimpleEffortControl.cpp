@@ -8,7 +8,6 @@ namespace tum_ics_ur_robot_lli {
         SimpleEffortControl::SimpleEffortControl(double weight, const QString &name)
                 : ControlEffort(name, SPLINE_TYPE, JOINT_SPACE, weight),
                   m_startFlag(false),
-                  m_startFlag2(false),
                   c_max_control_effort((Vector6d() << 330, 330, 150, 54, 54, 54).finished()),
                   m_Kp(Matrix6d::Zero()),
                   m_Kd(Matrix6d::Zero()),
@@ -19,7 +18,6 @@ namespace tum_ics_ur_robot_lli {
                   m_CS_Kp(Matrix6d::Zero()),
                   m_CS_Kd(Matrix6d::Zero()),
                   m_CS_Ki(Matrix6d::Zero()),
-                  m_goal(Vector6d::Zero()),
                   m_totalTime(100.0),
                   m_DeltaQ(Vector6d::Zero()),
                   m_DeltaQp(Vector6d::Zero()),
@@ -87,7 +85,7 @@ namespace tum_ics_ur_robot_lli {
             // ROS_WARN_STREAM("Target position [m]: " << m_target_pos.transpose());
         }
 
-        bool SimpleEffortControl::initControllerGains(std::string t_ns, Matrix6d& p_Kd, Matrix6d& p_Kp, Matrix6d& p_Ki){
+        bool SimpleEffortControl::loadControllerGains(std::string t_ns, Matrix6d& p_Kd, Matrix6d& p_Kp, Matrix6d& p_Ki){
             
             std::vector<double> vec;
 
@@ -139,10 +137,85 @@ namespace tum_ics_ur_robot_lli {
             return true;
         }
 
+        bool SimpleEffortControl::loadConfigParameters(){
+            std::vector<double> vec;
+
+            // check namespace
+            std::string ns = "~other_parameter_settings";
+            if (!ros::param::has(ns)) {
+                ROS_ERROR_STREAM(
+                        "SimpleEffortControl init(): no namespace named " << ns);
+                m_error = true;
+                return false;
+            } 
+
+            // total time
+            ros::param::get(ns + "/time_total", m_totalTime);
+            if (!(m_totalTime > 0)) {
+                ROS_ERROR_STREAM("m_totalTime: is negative:" << m_totalTime);
+                m_totalTime = 200.0;
+            }
+
+            // non singular joint state
+            ros::param::get(ns + "/non_singular_state", vec);
+            if (vec.size() < STD_DOF) {
+                ROS_ERROR_STREAM("non_singular_state: wrong number of dimensions:" << vec.size());
+                m_error = true;
+                return false;
+            }
+            for (int i = 0; i < STD_DOF; i++) {
+                m_qNonSing(i) = vec[i];
+            }
+
+            // time for moving out singularity
+            ros::param::get(ns + "/time_move_out_sing_state", m_NonSingTime);
+            if (!(m_NonSingTime > 0)) {
+                ROS_ERROR_STREAM("time_move_out_sing_state: is negative:" << m_NonSingTime);
+                m_NonSingTime = 15.0;
+            }
+
+            std::string ns_circle_traj = "/circle_traj";
+            // circular trajectory parameters
+            // center
+            ros::param::get(ns+ ns_circle_traj + "/center", vec);
+            if (vec.size() < 3) {
+                ROS_ERROR_STREAM("circle_traj/center: wrong number of dimensions:" << vec.size());
+                m_error = true;
+                return false;
+            }
+            for (int i = 0; i < 3; i++) {
+                m_circ_traj_center(i) = vec[i];
+            }
+
+            // radius
+            ros::param::get(ns+ ns_circle_traj + "/radius", vec);
+            if (vec.size() < 3) {
+                ROS_ERROR_STREAM("circle_traj/radius: wrong number of dimensions:" << vec.size());
+                m_error = true;
+                return false;
+            }
+            for (int i = 0; i < 3; i++) {
+                m_circ_traj_radius(i) = vec[i];
+            }
+
+            // frequency
+            ros::param::get(ns+ ns_circle_traj + "/frequency", vec);
+            if (vec.size() < 3) {
+                ROS_ERROR_STREAM("circle_traj/frequency: wrong number of dimensions:" << vec.size());
+                m_error = true;
+                return false;
+            }
+            for (int i = 0; i < 3; i++) {
+                m_circ_traj_frequency(i) = vec[i];
+            }
+
+            return true;
+        }
+
         bool SimpleEffortControl::init() {
             ROS_WARN_STREAM("SimpleEffortControl::init");
 
-            if (!initControllerGains("joint_space_ctrl", m_JS_Kd, m_JS_Kp, m_JS_Ki)){
+            if (!loadControllerGains("joint_space_ctrl", m_JS_Kd, m_JS_Kp, m_JS_Ki)){
                 ROS_ERROR_STREAM(
                         "SimpleEffortControl init(): joint_space_ctrl could not be initialized");
                 m_error = true;
@@ -151,7 +224,7 @@ namespace tum_ics_ur_robot_lli {
                 m_ct_sm.initControllerGains(ControlMode::JS, m_JS_Kp, m_JS_Kd, m_JS_Ki);
             }
 
-            if (!initControllerGains("cartesian_space_ctrl", m_CS_Kd, m_CS_Kp, m_CS_Ki)){
+            if (!loadControllerGains("cartesian_space_ctrl", m_CS_Kd, m_CS_Kp, m_CS_Ki)){
                 ROS_ERROR_STREAM(
                         "SimpleEffortControl init(): cartesian_space_ctrl could not be initialized");
                 m_error = true;
@@ -160,40 +233,24 @@ namespace tum_ics_ur_robot_lli {
                 m_ct_sm.initControllerGains(ControlMode::CS, m_CS_Kp, m_CS_Kd, m_CS_Ki);
             }
 
-            std::vector<double> vec;
-
-            // check namespace
-            std::string ns = "~joint_space_ctrl";
-            if (!ros::param::has(ns)) {
+            if (!loadConfigParameters()){
                 ROS_ERROR_STREAM(
-                        "SimpleEffortControl init(): gains not defined in:" << ns);
-                m_error = true;
-                return false;
-            }            
-
-            // GOAL
-            ros::param::get(ns + "/goal1", vec);
-            if (vec.size() < STD_DOF) {
-                ROS_ERROR_STREAM("goal: wrong number of dimensions:" << vec.size());
+                        "SimpleEffortControl init(): config parameters could not be initialized");
                 m_error = true;
                 return false;
             }
-            for (int i = 0; i < STD_DOF; i++) {
-                m_goal(i) = vec[i];
-            }
 
-            // total time
-            ros::param::get(ns + "/time", m_totalTime);
-            if (!(m_totalTime > 0)) {
-                ROS_ERROR_STREAM("m_totalTime: is negative:" << m_totalTime);
-                m_totalTime = 100.0;
-            }
-
-            ROS_WARN_STREAM("Goal [DEG]: \n" << m_goal.transpose());
             ROS_WARN_STREAM("Total Time [s]: " << m_totalTime);
-            m_goal = DEG2RAD(m_goal);
-            ROS_WARN_STREAM("Goal [RAD]: \n" << m_goal.transpose());
+            ROS_WARN_STREAM("Time for moving out singularity [s]: " << m_NonSingTime);
 
+            ROS_WARN_STREAM("Non-Singular Joint State [DEG]: " << m_qNonSing.transpose());
+            m_qNonSing = DEG2RAD(m_qNonSing);
+            ROS_WARN_STREAM("Non-Singular Joint State [RAD]: " << m_qNonSing.transpose());
+
+            ROS_WARN_STREAM("Circle Trajectory parameters \
+                 \nCenter in frame{0} [m]: "<< m_circ_traj_center.transpose() << 
+                "\nRadius [m]: " << m_circ_traj_radius.transpose() << 
+                "\nFrequency [rad/s]: " << m_circ_traj_frequency.transpose());
 
             // initalize the adaptive robot model parameters
             if(!m_ur10_model.initRequest(n))
@@ -203,6 +260,8 @@ namespace tum_ics_ur_robot_lli {
                 return false;
             }
 
+            ros::Duration(1.0).sleep();
+            
             return true;
         }
 
@@ -384,7 +443,7 @@ namespace tum_ics_ur_robot_lli {
                         state_changed = true;
                         m_qStart = current.q;
 
-                        ROS_WARN_STREAM("State Machine: Move out singularity!\n Task time = " << task_time << "\n Goal [rad] = " << m_goal.transpose());
+                        ROS_WARN_STREAM("State Machine: Move out singularity!\n Task time = " << task_time << "\n Goal [rad] = " << m_qNonSing.transpose());
                     }
                 }                
                 break;
@@ -392,7 +451,7 @@ namespace tum_ics_ur_robot_lli {
                 case ControlTask::MOVE_OUT_SINGULARITY:{
 
                     // TODO adjust goal name
-                    vQXd = getJointPVT5(m_qStart, m_goal, m_ct_sm.manouverTime(ellapsed_time), m_ct_sm.getTaskTime());
+                    vQXd = getJointPVT5(m_qStart, m_qNonSing, m_ct_sm.manouverTime(ellapsed_time), m_ct_sm.getTaskTime());
                     
                     // compatible version
                     QXd = vQXd[0];

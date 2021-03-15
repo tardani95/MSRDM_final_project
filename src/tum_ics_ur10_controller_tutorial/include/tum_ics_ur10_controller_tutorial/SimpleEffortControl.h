@@ -13,11 +13,23 @@ namespace tum_ics_ur_robot_lli {
         class SimpleEffortControl : public ControlEffort {
         private:
             bool m_startFlag;
-            bool m_startFlag2;
+
+            double m_totalTime;
+            double m_NonSingTime;
+            Vector6d m_qNonSing;
+
+            Vector3d m_circ_traj_center;
+            Vector3d m_circ_traj_radius;
+            Vector3d m_circ_traj_frequency;
 
             Vector6d m_qStart;
+            Vector6d m_qCurrent;
+            Vector6d m_qGoal;
+            
             Vector6d m_xStart;
+            Vector6d m_xCurrent;
             Vector6d m_xGoal;
+
             JointState m_qInit;
             JointState m_qHome;
             JointState m_qPark;
@@ -49,9 +61,6 @@ namespace tum_ics_ur_robot_lli {
             Matrix6d m_CS_Kd;
             Matrix6d m_CS_Ki;
             
-            Vector6d m_goal;
-            double m_totalTime;
-
             Vector6d m_DeltaQ;
             Vector6d m_DeltaQp;
 
@@ -80,7 +89,9 @@ namespace tum_ics_ur_robot_lli {
             void targetPositionUpdateCallback(const object_msgs::Objects msg);
 
         private:
-            bool initControllerGains(std::string ns, Matrix6d& p_Kd, Matrix6d& p_Kp, Matrix6d& p_Ki);
+            bool loadControllerGains(std::string ns, Matrix6d& p_Kd, Matrix6d& p_Kp, Matrix6d& p_Ki);
+
+            bool loadConfigParameters();
 
             bool init();
 
