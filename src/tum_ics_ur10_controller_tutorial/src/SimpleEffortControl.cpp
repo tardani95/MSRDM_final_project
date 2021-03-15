@@ -26,14 +26,14 @@ namespace tum_ics_ur_robot_lli {
                   m_sumDeltaQp(Vector6d::Zero()),
                   m_ct_sm(ControlTaskStateMachine()),
                   m_ur10_model(ur::UR10Model("ur10_model")) {
-            
+
             pubCtrlData = n.advertise<tum_ics_ur_robot_msgs::ControlData>(
                     "SimpleEffortCtrlData", 100);
 
-            pubTrajMarker = n.advertise<visualization_msgs::MarkerArray>("trajectory_markers", 100);         
+            pubTrajMarker = n.advertise<visualization_msgs::MarkerArray>("trajectory_markers", 100);
 
             m_vObstacles_pos_0.reserve(m_max_num_obstacles);
-            
+
             m_theta = m_ur10_model.parameterInitalGuess();
 
             m_controlPeriod = 0.002;
@@ -55,7 +55,7 @@ namespace tum_ics_ur_robot_lli {
             m_qPark = qpark;
         }
 
-        void SimpleEffortControl::obstaclesPositionUpdateCallback(const object_msgs::Objects msg){
+        void SimpleEffortControl::obstaclesPositionUpdateCallback(const object_msgs::Objects msg) {
             // ROS_WARN_STREAM("Objects: \n" << msg);
 
             // Objects obstacles = msg.objects;
@@ -63,9 +63,9 @@ namespace tum_ics_ur_robot_lli {
             geometry_msgs::Point obstacle_position;
             Vector4d tmp_obs_pos = Vector4d::Zero();
             tmp_obs_pos[3] = 1.0;
-            
-            for(size_t idx=0; idx < m_num_obstacles; idx++){
-            
+
+            for (size_t idx = 0; idx < m_num_obstacles; idx++) {
+
                 obstacle_position = msg.objects[idx].position.position;
                 tmp_obs_pos[0] = obstacle_position.x;
                 tmp_obs_pos[1] = obstacle_position.y;
@@ -76,7 +76,7 @@ namespace tum_ics_ur_robot_lli {
             }
         }
 
-        void SimpleEffortControl::targetPositionUpdateCallback(const object_msgs::Objects msg){
+        void SimpleEffortControl::targetPositionUpdateCallback(const object_msgs::Objects msg) {
             // ROS_WARN_STREAM("Objects: \n" << msg);
             geometry_msgs::Point target_x = msg.objects[0].position.position;
             m_target_pos[0] = target_x.x;
@@ -85,15 +85,15 @@ namespace tum_ics_ur_robot_lli {
             // ROS_WARN_STREAM("Target position [m]: " << m_target_pos.transpose());
         }
 
-        bool SimpleEffortControl::loadControllerGains(std::string t_ns, Matrix6d& p_Kd, Matrix6d& p_Kp, Matrix6d& p_Ki){
-            
+        bool SimpleEffortControl::loadControllerGains(std::string t_ns, Matrix6d &p_Kd, Matrix6d &p_Kp, Matrix6d &p_Ki) {
+
             std::vector<double> vec;
 
             // check namespace
             std::string ns = "~" + t_ns;
             if (!ros::param::has(ns)) {
                 ROS_ERROR_STREAM(
-                        "SimpleEffortControl init(): "<< t_ns <<" gains not defined in:" << ns);
+                        "SimpleEffortControl init(): " << t_ns << " gains not defined in:" << ns);
                 m_error = true;
                 return false;
             }
@@ -108,7 +108,7 @@ namespace tum_ics_ur_robot_lli {
             for (size_t i = 0; i < STD_DOF; i++) {
                 p_Kd(i, i) = vec[i];
             }
-            ROS_WARN_STREAM(t_ns <<" Kd: \n" << p_Kd);
+            ROS_WARN_STREAM(t_ns << " Kd: \n" << p_Kd);
 
             // P GAINS
             ros::param::get(ns + "/gains_p", vec);
@@ -120,7 +120,7 @@ namespace tum_ics_ur_robot_lli {
             for (int i = 0; i < STD_DOF; i++) {
                 p_Kp(i, i) = vec[i];
             }
-            ROS_WARN_STREAM(t_ns <<" Kp: \n" << p_Kp);
+            ROS_WARN_STREAM(t_ns << " Kp: \n" << p_Kp);
 
             // I GAINS
             ros::param::get(ns + "/gains_i", vec);
@@ -132,12 +132,12 @@ namespace tum_ics_ur_robot_lli {
             for (size_t i = 0; i < STD_DOF; i++) {
                 p_Ki(i, i) = vec[i];
             }
-            ROS_WARN_STREAM(t_ns <<" Ki: \n" << p_Ki);
+            ROS_WARN_STREAM(t_ns << " Ki: \n" << p_Ki);
 
             return true;
         }
 
-        bool SimpleEffortControl::loadConfigParameters(){
+        bool SimpleEffortControl::loadConfigParameters() {
             std::vector<double> vec;
 
             // check namespace
@@ -147,11 +147,11 @@ namespace tum_ics_ur_robot_lli {
                         "SimpleEffortControl init(): no namespace named " << ns);
                 m_error = true;
                 return false;
-            } 
+            }
 
             // total time
             ros::param::get(ns + "/time_total", m_totalTime);
-            if (!(m_totalTime > 0)) {
+            if (m_totalTime <= 0) {
                 ROS_ERROR_STREAM("m_totalTime: is negative:" << m_totalTime);
                 m_totalTime = 200.0;
             }
@@ -169,7 +169,7 @@ namespace tum_ics_ur_robot_lli {
 
             // time for moving out singularity
             ros::param::get(ns + "/time_move_out_sing_state", m_NonSingTime);
-            if (!(m_NonSingTime > 0)) {
+            if (m_NonSingTime <= 0) {
                 ROS_ERROR_STREAM("time_move_out_sing_state: is negative:" << m_NonSingTime);
                 m_NonSingTime = 15.0;
             }
@@ -177,7 +177,7 @@ namespace tum_ics_ur_robot_lli {
             std::string ns_circle_traj = "/circle_traj";
             // circular trajectory parameters
             // center
-            ros::param::get(ns+ ns_circle_traj + "/center", vec);
+            ros::param::get(ns + ns_circle_traj + "/center", vec);
             if (vec.size() < 3) {
                 ROS_ERROR_STREAM("circle_traj/center: wrong number of dimensions:" << vec.size());
                 m_error = true;
@@ -188,7 +188,7 @@ namespace tum_ics_ur_robot_lli {
             }
 
             // radius
-            ros::param::get(ns+ ns_circle_traj + "/radius", vec);
+            ros::param::get(ns + ns_circle_traj + "/radius", vec);
             if (vec.size() < 3) {
                 ROS_ERROR_STREAM("circle_traj/radius: wrong number of dimensions:" << vec.size());
                 m_error = true;
@@ -199,7 +199,7 @@ namespace tum_ics_ur_robot_lli {
             }
 
             // frequency
-            ros::param::get(ns+ ns_circle_traj + "/frequency", vec);
+            ros::param::get(ns + ns_circle_traj + "/frequency", vec);
             if (vec.size() < 3) {
                 ROS_ERROR_STREAM("circle_traj/frequency: wrong number of dimensions:" << vec.size());
                 m_error = true;
@@ -215,25 +215,25 @@ namespace tum_ics_ur_robot_lli {
         bool SimpleEffortControl::init() {
             ROS_WARN_STREAM("SimpleEffortControl::init");
 
-            if (!loadControllerGains("joint_space_ctrl", m_JS_Kd, m_JS_Kp, m_JS_Ki)){
+            if (!loadControllerGains("joint_space_ctrl", m_JS_Kd, m_JS_Kp, m_JS_Ki)) {
                 ROS_ERROR_STREAM(
                         "SimpleEffortControl init(): joint_space_ctrl could not be initialized");
                 m_error = true;
                 return false;
-            }else{
+            } else {
                 m_ct_sm.initControllerGains(ControlMode::JS, m_JS_Kp, m_JS_Kd, m_JS_Ki);
             }
 
-            if (!loadControllerGains("cartesian_space_ctrl", m_CS_Kd, m_CS_Kp, m_CS_Ki)){
+            if (!loadControllerGains("cartesian_space_ctrl", m_CS_Kd, m_CS_Kp, m_CS_Ki)) {
                 ROS_ERROR_STREAM(
                         "SimpleEffortControl init(): cartesian_space_ctrl could not be initialized");
                 m_error = true;
                 return false;
-            }else{
+            } else {
                 m_ct_sm.initControllerGains(ControlMode::CS, m_CS_Kp, m_CS_Kd, m_CS_Ki);
             }
 
-            if (!loadConfigParameters()){
+            if (!loadConfigParameters()) {
                 ROS_ERROR_STREAM(
                         "SimpleEffortControl init(): config parameters could not be initialized");
                 m_error = true;
@@ -248,20 +248,19 @@ namespace tum_ics_ur_robot_lli {
             ROS_WARN_STREAM("Non-Singular Joint State [RAD]: " << m_qNonSing.transpose());
 
             ROS_WARN_STREAM("Circle Trajectory parameters \
-                 \nCenter in frame{0} [m]: "<< m_circ_traj_center.transpose() << 
-                "\nRadius [m]: " << m_circ_traj_radius.transpose() << 
-                "\nFrequency [rad/s]: " << m_circ_traj_frequency.transpose());
+                 \nCenter in frame{0} [m]: " << m_circ_traj_center.transpose() <<
+                                             "\nRadius [m]: " << m_circ_traj_radius.transpose() <<
+                                             "\nFrequency [rad/s]: " << m_circ_traj_frequency.transpose());
 
             // initalize the adaptive robot model parameters
-            if(!m_ur10_model.initRequest(n))
-            {
+            if (!m_ur10_model.initRequest(n)) {
                 ROS_ERROR_STREAM("Error initalizing ur10 model");
                 m_error = true;
                 return false;
             }
 
             ros::Duration(1.0).sleep();
-            
+
             return true;
         }
 
@@ -270,7 +269,7 @@ namespace tum_ics_ur_robot_lli {
             return true;
         }
 
-        Vector6d SimpleEffortControl::tf2pose(ow::HomogeneousTransformation T){
+        Vector6d SimpleEffortControl::tf2pose(ow::HomogeneousTransformation T) {
             Vector4d zero4d;
             zero4d.setZero();
             zero4d[3] = 1.0;
@@ -285,11 +284,11 @@ namespace tum_ics_ur_robot_lli {
             return pose;
         }
 
-        Vector6d SimpleEffortControl::tau(const RobotTime &time, 
+        Vector6d SimpleEffortControl::tau(const RobotTime &time,
                                           const JointState &current_js,
                                           const Vector6d &t_QXrp,
                                           const Vector6d &t_QXrpp,
-                                          const Vector6d &t_QXp){
+                                          const Vector6d &t_QXp) {
             // control torque
             Vector6d tau;
             tau.setZero();
@@ -297,7 +296,7 @@ namespace tum_ics_ur_robot_lli {
 
             // robot model
             Vector6d QXrp, QXrpp, QXp, Q, Qp;
-            
+
             QXrp = t_QXrp;
             QXrpp = t_QXrpp;
 
@@ -307,55 +306,54 @@ namespace tum_ics_ur_robot_lli {
             Qp = current_js.qp;
 
             ur::UR10Model::Regressor Yr;
-            
+
             Vector6d Sq, Sqx;
 
             // controller 
             Sqx = QXp - QXrp;
 
             Vector6d Qrp, Qrpp;
-            Eigen::Matrix<double,6,6> J_ef_0;
+            Eigen::Matrix<double, 6, 6> J_ef_0;
             PartialPivLU<Tum::Matrix6d> J_ef_0_lu;
 
-            switch (m_ct_sm.getControlMode())
-            {
-            case ControlMode::JS: /* joint space */
-                Sq = Sqx;
-                Qrp = QXrp;
-                Qrpp = QXrpp;
-                Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
-                break;
-            
-            case ControlMode::CS: /* cartesian space */
-                J_ef_0 = m_ur10_model.J_ef_0(current_js.q);
-                // Eigen::Matrix<double,3,6> J_ef_0_v = J_ef_0.topRows(3);
-                // ROS_WARN_STREAM("Jef_0=\n" << J_ef_0);
-                J_ef_0_lu = J_ef_0.lu();
-                
-                Sq = J_ef_0_lu.solve(Sqx);
-                Qrp = J_ef_0_lu.solve(QXrp);
-                Qrpp = J_ef_0_lu.solve(QXrpp);
-                // ROS_WARN_STREAM("Sq=\n" << Sq.transpose());
-                // ROS_WARN_STREAM("Qrp=\n" << Qrp.transpose());
-                // ROS_WARN_STREAM("Qrpp=\n" << Qrpp.transpose());
+            switch (m_ct_sm.getControlMode()) {
+                case ControlMode::JS: /* joint space */
+                    Sq = Sqx;
+                    Qrp = QXrp;
+                    Qrpp = QXrpp;
+                    Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
+                    break;
 
-                Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
-                break;
+                case ControlMode::CS: /* cartesian space */
+                    J_ef_0 = m_ur10_model.J_ef_0(current_js.q);
+                    // Eigen::Matrix<double,3,6> J_ef_0_v = J_ef_0.topRows(3);
+                    // ROS_WARN_STREAM("Jef_0=\n" << J_ef_0);
+                    J_ef_0_lu = J_ef_0.lu();
 
-            default:
-                ROS_WARN_STREAM("Using DEFAULT control mode: Joint Space");
-                Sq = Sqx;
-                Qrp = QXrp;
-                Qrpp = QXrpp;
-                Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
+                    Sq = J_ef_0_lu.solve(Sqx);
+                    Qrp = J_ef_0_lu.solve(QXrp);
+                    Qrpp = J_ef_0_lu.solve(QXrpp);
+                    // ROS_WARN_STREAM("Sq=\n" << Sq.transpose());
+                    // ROS_WARN_STREAM("Qrp=\n" << Qrp.transpose());
+                    // ROS_WARN_STREAM("Qrpp=\n" << Qrpp.transpose());
+
+                    Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
+                    break;
+
+                default:
+                    ROS_WARN_STREAM("Using DEFAULT control mode: Joint Space");
+                    Sq = Sqx;
+                    Qrp = QXrp;
+                    Qrpp = QXrpp;
+                    Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
             }
 
             // ROS_WARN_STREAM("Sq =\n" << Sq);
             // calculate torque
-            tau = -m_ct_sm.getKd()*Sq + Yr*m_theta;
+            tau = -m_ct_sm.getKd() * Sq + Yr * m_theta;
 
             // parameter update
-            MatrixXd gamma = MatrixXd::Identity(81,81);
+            MatrixXd gamma = MatrixXd::Identity(81, 81);
             gamma *= 0.0002;
             // parameter vector update
             m_theta -= gamma * Yr.transpose() * Sq;
@@ -363,25 +361,25 @@ namespace tum_ics_ur_robot_lli {
             return tau;
         }
 
-        Vector6d SimpleEffortControl::antiWindUp(Vector6d tau){
+        Vector6d SimpleEffortControl::antiWindUp(Vector6d tau) {
             std::stringstream ss;
             bool b_anti_windup = false;
 
-            for(size_t idx = 0; idx<6; idx++){
+            for (size_t idx = 0; idx < 6; idx++) {
                 double tau_idx = tau[idx];
-                double max_tau_idx = c_max_control_effort[idx]; 
-                if(tau_idx > max_tau_idx){
+                double max_tau_idx = c_max_control_effort[idx];
+                if (tau_idx > max_tau_idx) {
                     tau[idx] = max_tau_idx;
                     // switch on anti-windup
                     b_anti_windup = true;
                     ss << idx << ", ";
                     m_anti_windup[idx] = 0.0;
-                }else{
+                } else {
                     m_anti_windup[idx] = 1.0;
                 }
             }
 
-            if(b_anti_windup){
+            if (b_anti_windup) {
                 ROS_WARN_STREAM("anti-windup on axes: " << ss.str());
             }
 
@@ -390,7 +388,7 @@ namespace tum_ics_ur_robot_lli {
 
         Vector6d SimpleEffortControl::update(const RobotTime &time,
                                              const JointState &current) {
-            
+
             // time
             double ellapsed_time = time.tD();
 
@@ -410,7 +408,7 @@ namespace tum_ics_ur_robot_lli {
             VVectorDOFd vQXd;
             VVectorDOFd vQd_Qdp_Qdpp;
             VVectorDOFd vXd_Xdp_Xdpp;
-            
+
 
             /* ============= first time run ============== */
             if (!m_startFlag) {
@@ -426,8 +424,8 @@ namespace tum_ics_ur_robot_lli {
             // State Machine
             bool state_changed = false;
 
-            switch (m_ct_sm.getCurrentTask()){
-                case ControlTask::BREAK:{
+            switch (m_ct_sm.getCurrentTask()) {
+                case ControlTask::BREAK: {
                     // Qd.setZero(); // should be set to the last value
                     Qdp.setZero();
                     Qdpp.setZero();
@@ -436,28 +434,31 @@ namespace tum_ics_ur_robot_lli {
                     QXdp.setZero();
                     QXdpp.setZero();
 
-                    if(!m_ct_sm.isRunning(ellapsed_time)){
+                    if (!m_ct_sm.isRunning(ellapsed_time)) {
                         // TODO adjust time
                         double task_time = 5.0;
                         m_ct_sm.changeTask(ControlTask::MOVE_OUT_SINGULARITY, task_time, ellapsed_time);
                         state_changed = true;
                         m_qStart = current.q;
 
-                        ROS_WARN_STREAM("State Machine: Move out singularity!\n Task time = " << task_time << "\n Goal [rad] = " << m_qNonSing.transpose());
+                        ROS_WARN_STREAM(
+                                "State Machine: Move out singularity!\n Task time = " << task_time << "\n Goal [rad] = "
+                                                                                      << m_qNonSing.transpose());
                     }
-                }                
-                break;
-            
-                case ControlTask::MOVE_OUT_SINGULARITY:{
+                }
+                    break;
+
+                case ControlTask::MOVE_OUT_SINGULARITY: {
 
                     // TODO adjust goal name
-                    vQXd = getJointPVT5(m_qStart, m_qNonSing, m_ct_sm.manouverTime(ellapsed_time), m_ct_sm.getTaskTime());
-                    
+                    vQXd = getJointPVT5(m_qStart, m_qNonSing, m_ct_sm.manouverTime(ellapsed_time),
+                                        m_ct_sm.getTaskTime());
+
                     // compatible version
                     QXd = vQXd[0];
                     QXdp = vQXd[1];
                     QXdpp = vQXd[2];
-                    
+
                     // new version
                     vQd_Qdp_Qdpp = vQXd;
                     Qd = vQd_Qdp_Qdpp[0];
@@ -465,10 +466,10 @@ namespace tum_ics_ur_robot_lli {
                     Qdpp = vQd_Qdp_Qdpp[2];
 
 
-                    if(!m_ct_sm.isRunning(ellapsed_time)){
+                    if (!m_ct_sm.isRunning(ellapsed_time)) {
                         // TODO adjust time
                         double task_time = 20.0;
-                        m_ct_sm.changeTask(ControlTask::MOVE_DOWN_AND_ROTATE_UPWARDS, task_time,ellapsed_time);
+                        m_ct_sm.changeTask(ControlTask::MOVE_DOWN_AND_ROTATE_UPWARDS, task_time, ellapsed_time);
                         state_changed = true;
 
                         m_xStart = tf2pose(m_ur10_model.T_ef_0(current.q));
@@ -480,31 +481,33 @@ namespace tum_ics_ur_robot_lli {
                         // rotate upwards (euler angles ZYX)
                         // m_xGoal.tail(3) << 2.1715, -1.5, 0.9643;
 
-                        ROS_WARN_STREAM("State Machine: Move down and rotate EF upwards!\n Task time = " << task_time << "\n Goal [3x m, 3x rad] = " << m_xGoal.transpose());
+                        ROS_WARN_STREAM("State Machine: Move down and rotate EF upwards!\n Task time = " << task_time
+                                                                                                         << "\n Goal [3x m, 3x rad] = "
+                                                                                                         << m_xGoal.transpose());
                     }
                 }
-                break;
+                    break;
 
-                case ControlTask::MOVE_DOWN_AND_ROTATE_UPWARDS:{
+                case ControlTask::MOVE_DOWN_AND_ROTATE_UPWARDS: {
 
-                     // TODO adjust goal name
+                    // TODO adjust goal name
                     vQXd = getJointPVT5(m_xStart, m_xGoal, m_ct_sm.manouverTime(ellapsed_time), m_ct_sm.getTaskTime());
-                
+
                     // compatible version
                     QXd = vQXd[0];
                     QXdp = vQXd[1];
                     QXdpp = vQXd[2];
-                    
+
                     // new version
                     vXd_Xdp_Xdpp = vQXd;
                     Xd = vXd_Xdp_Xdpp[0];
                     Xdp = vXd_Xdp_Xdpp[1];
                     Xdpp = vXd_Xdp_Xdpp[2];
 
-                    if(!m_ct_sm.isRunning(ellapsed_time)){
+                    if (!m_ct_sm.isRunning(ellapsed_time)) {
                         // TODO adjust time
                         double task_time = 100.0;
-                        m_ct_sm.changeTask(ControlTask::MOVE_IN_CIRCLE_POINT_UPWARDS, task_time,ellapsed_time);
+                        m_ct_sm.changeTask(ControlTask::MOVE_IN_CIRCLE_POINT_UPWARDS, task_time, ellapsed_time);
                         state_changed = true;
 
                         m_xStart = tf2pose(m_ur10_model.T_ef_0(current.q));
@@ -512,9 +515,9 @@ namespace tum_ics_ur_robot_lli {
                         ROS_WARN_STREAM("State Machine: Move in circle pointing upwards!\n Task time = " << task_time);
                     }
                 }
-                break;
+                    break;
 
-                case ControlTask::MOVE_IN_CIRCLE_POINT_UPWARDS:{
+                case ControlTask::MOVE_IN_CIRCLE_POINT_UPWARDS: {
                     QXd.setZero();
                     QXdp.setZero();
                     QXdpp.setZero();
@@ -523,18 +526,18 @@ namespace tum_ics_ur_robot_lli {
                     Xdp.setZero();
                     Xdpp.setZero();
 
-                    if(!m_ct_sm.isRunning(ellapsed_time)){
+                    if (!m_ct_sm.isRunning(ellapsed_time)) {
                         // TODO adjust time
                         double task_time = 2.0;
-                        m_ct_sm.changeTask(ControlTask::BREAK,task_time,ellapsed_time);
+                        m_ct_sm.changeTask(ControlTask::BREAK, task_time, ellapsed_time);
                         state_changed = true;
 
                         ROS_WARN_STREAM("State Machine: Break and start over!\n Task time = " << task_time);
                     }
                 }
-                break;
+                    break;
 
-                case ControlTask::OBSTACLE_AVOIDANCE:{
+                case ControlTask::OBSTACLE_AVOIDANCE: {
                     QXd.setZero();
                     QXdp.setZero();
                     QXdpp.setZero();
@@ -543,23 +546,23 @@ namespace tum_ics_ur_robot_lli {
                     Xdp.setZero();
                     Xdpp.setZero();
 
-                    if(!m_ct_sm.isRunning(ellapsed_time)){
+                    if (!m_ct_sm.isRunning(ellapsed_time)) {
                         // TODO adjust time
                         double task_time = 2.0;
-                        m_ct_sm.changeTask(ControlTask::BREAK,task_time,ellapsed_time);
+                        m_ct_sm.changeTask(ControlTask::BREAK, task_time, ellapsed_time);
                         state_changed = true;
 
                         ROS_WARN_STREAM("State Machine: Break and start over!\n Task time = " << task_time);
                     }
                 }
-                break;
+                    break;
 
 
                 default:
                     ROS_ERROR_STREAM("Unknown ControlTask!");
             }
 
-            if(state_changed){
+            if (state_changed) {
                 Qd = current.q;
                 Qdp.setZero();
                 Qdpp.setZero();
@@ -571,20 +574,20 @@ namespace tum_ics_ur_robot_lli {
                 m_sumDeltaQp.setZero();
                 m_anti_windup.setOnes();
 
-                switch(m_ct_sm.getControlMode()){
-                case ControlMode::JS:
+                switch (m_ct_sm.getControlMode()) {
+                    case ControlMode::JS:
                         QXd = Qd;
                         QXdp = Qdp;
                         QXdpp = Qdpp;
-                    break;
-                case ControlMode::CS:
+                        break;
+                    case ControlMode::CS:
                         QXd = Xd;
                         QXdp = Xdp;
                         QXdpp = Xdpp;
-                    break;
-                default:
-                    ROS_ERROR_STREAM("bad control mode");
-                    break;
+                        break;
+                    default:
+                        ROS_ERROR_STREAM("bad control mode");
+                        break;
                 }
             }
 
@@ -605,10 +608,10 @@ namespace tum_ics_ur_robot_lli {
             //     ROS_INFO_STREAM("Desired polyline start= \n" << m_xStart.transpose());
             //     ROS_INFO_STREAM("Desired polyline end= \n" << m_xGoal.transpose());
             // }
-            
+
             VectorDOFd QX, QXp; // current q or x
 
-            switch(m_ct_sm.getControlMode()){
+            switch (m_ct_sm.getControlMode()) {
                 case ControlMode::JS:
                     QX = current.q;
                     QXp = current.qp;
@@ -647,7 +650,7 @@ namespace tum_ics_ur_robot_lli {
             // torque calculation
             tau = SimpleEffortControl::tau(time, current, QXrp, QXrpp, QXp);
             // ROS_WARN_STREAM("raw tau = " << tau.transpose());
-            
+
             // anti-windup
             tau = SimpleEffortControl::antiWindUp(tau);
             // ROS_WARN_STREAM("max tau = " << tau.transpose());

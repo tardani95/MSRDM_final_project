@@ -25,7 +25,7 @@ namespace tum_ics_ur_robot_lli {
             Vector6d m_qStart;
             Vector6d m_qCurrent;
             Vector6d m_qGoal;
-            
+
             Vector6d m_xStart;
             Vector6d m_xCurrent;
             Vector6d m_xGoal;
@@ -60,7 +60,7 @@ namespace tum_ics_ur_robot_lli {
             Matrix6d m_CS_Kp;
             Matrix6d m_CS_Kd;
             Matrix6d m_CS_Ki;
-            
+
             Vector6d m_DeltaQ;
             Vector6d m_DeltaQp;
 
@@ -86,10 +86,11 @@ namespace tum_ics_ur_robot_lli {
             void setQPark(const JointState &qpark);
 
             void obstaclesPositionUpdateCallback(const object_msgs::Objects msg);
+
             void targetPositionUpdateCallback(const object_msgs::Objects msg);
 
         private:
-            bool loadControllerGains(std::string ns, Matrix6d& p_Kd, Matrix6d& p_Kp, Matrix6d& p_Ki);
+            bool loadControllerGains(std::string ns, Matrix6d &p_Kd, Matrix6d &p_Kp, Matrix6d &p_Ki);
 
             bool loadConfigParameters();
 
@@ -97,12 +98,12 @@ namespace tum_ics_ur_robot_lli {
 
             bool start();
 
-            
-            Vector6d tau(const RobotTime &time, 
-                                          const JointState &current_js,
-                                          const Vector6d &vQXrp,
-                                          const Vector6d &vQXrpp,
-                                          const Vector6d &vQXp);
+
+            Vector6d tau(const RobotTime &time,
+                         const JointState &current_js,
+                         const Vector6d &vQXrp,
+                         const Vector6d &vQXrpp,
+                         const Vector6d &vQXp);
 
             Vector6d antiWindUp(Vector6d tau);
 

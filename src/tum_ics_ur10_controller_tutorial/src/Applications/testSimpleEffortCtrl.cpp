@@ -6,7 +6,7 @@ int main(int argc, char **argv) {
     QApplication a(argc, argv);
 
     ros::init(argc, argv, "testRobotArmClass", ros::init_options::AnonymousName);
-    
+
     ros::NodeHandle nh;
 
     QString configFilePath = argv[1];
@@ -30,8 +30,12 @@ int main(int argc, char **argv) {
     controller.setQHome(robot.qHome());
     controller.setQPark(robot.qPark());
 
-    ros::Subscriber targetSub = nh.subscribe("target", 10, &tum_ics_ur_robot_lli::RobotControllers::SimpleEffortControl::targetPositionUpdateCallback, &controller);
-    ros::Subscriber obstaclesSub = nh.subscribe("obstacles", 10, &tum_ics_ur_robot_lli::RobotControllers::SimpleEffortControl::obstaclesPositionUpdateCallback, &controller);
+    ros::Subscriber targetSub = nh.subscribe("target", 10,
+                                             &tum_ics_ur_robot_lli::RobotControllers::SimpleEffortControl::targetPositionUpdateCallback,
+                                             &controller);
+    ros::Subscriber obstaclesSub = nh.subscribe("obstacles", 10,
+                                                &tum_ics_ur_robot_lli::RobotControllers::SimpleEffortControl::obstaclesPositionUpdateCallback,
+                                                &controller);
 
     // RUN !
     ROS_INFO_STREAM("Start Robot");

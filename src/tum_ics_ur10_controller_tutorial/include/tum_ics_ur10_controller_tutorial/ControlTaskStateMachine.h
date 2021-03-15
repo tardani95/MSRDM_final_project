@@ -5,26 +5,25 @@
 
 // add namespaces to avoid namespace specifier for Vector6d and etc.
 namespace tum_ics_ur_robot_lli {
-namespace RobotControllers {
+    namespace RobotControllers {
 
-    enum ControlMode{
-        JS = 0,
-        CS,
-        MIXED,
-        IMPEDANCE,
-    };
+        enum ControlMode {
+            JS = 0,
+            CS,
+            MIXED,
+            IMPEDANCE,
+        };
 
-    enum ControlTask{
-        BREAK = 0,
-        MOVE_OUT_SINGULARITY,
-        MOVE_DOWN_AND_ROTATE_UPWARDS,
-        MOVE_IN_CIRCLE_POINT_UPWARDS,
-        OBSTACLE_AVOIDANCE,
-    };
+        enum ControlTask {
+            BREAK = 0,
+            MOVE_OUT_SINGULARITY,
+            MOVE_DOWN_AND_ROTATE_UPWARDS,
+            MOVE_IN_CIRCLE_POINT_UPWARDS,
+            OBSTACLE_AVOIDANCE,
+        };
 
 
-
-    class ControlTaskStateMachine{
+        class ControlTaskStateMachine {
 
         private:
             ControlTask task;
@@ -57,29 +56,38 @@ namespace RobotControllers {
             Matrix6d m_MX_Kd;
             Matrix6d m_MX_Ki;
 
-        /* -------------- methods ----------- */
+            /* -------------- methods ----------- */
         public:
             ControlTaskStateMachine();
 
             ~ControlTaskStateMachine();
 
             void initControllerGains(ControlMode cm, Matrix6d Kp, Matrix6d Kd, Matrix6d Ki);
+
             Matrix6d getKp();
+
             Matrix6d getKd();
+
             Matrix6d getKi();
 
             bool isRunning(double current_time);
+
             double manouverTime(double current_time);
+
             double getTaskTime();
-            
+
             ControlTask getCurrentTask();
+
             void changeTask(ControlTask next_task, double task_time, double current_time);
+
             void switchControlGains();
+
             ControlMode getControlMode();
+
             void setControlMode(ControlMode new_control_mode);
 
-            
-    };
-} // namespace RobotControllers
+
+        };
+    } // namespace RobotControllers
 } // namespace tum_ics_ur_robot_lli
 #endif // UR_ROBOT_LLI_CONTROLTASKSTATEMACHINE_H
