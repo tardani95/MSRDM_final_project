@@ -6,6 +6,7 @@
 #include <ur10_robot_model/model_ur10.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <object_msgs/Objects.h>
+#include <nav_msgs/Path.h>
 
 namespace tum_ics_ur_robot_lli {
     namespace RobotControllers {
@@ -38,8 +39,15 @@ namespace tum_ics_ur_robot_lli {
             ros::NodeHandle n;
             ros::Publisher pubCtrlData;
             ros::Publisher pubTrajMarker;
+            ros::Publisher pubCartPath;
+            ros::Publisher pubEFPath;
 
             visualization_msgs::MarkerArray m_marker_array;
+            nav_msgs::Path path_desired_msg;
+            nav_msgs::Path path_ef_msg;
+
+            double m_last_time;
+            size_t m_path_publish_ctr;
 
             Vector3d m_target_pos;
             static const size_t m_max_num_obstacles = 4;

@@ -8,6 +8,8 @@ namespace tum_ics_ur_robot_lli {
         SimpleEffortControl::SimpleEffortControl(double weight, const QString &name)
                 : ControlEffort(name, SPLINE_TYPE, JOINT_SPACE, weight),
                   m_startFlag(false),
+                  m_last_time(0.0),
+                  m_path_publish_ctr(0),
                   c_max_control_effort((Vector6d() << 330, 330, 150, 54, 54, 54).finished()),
                   m_Kp(Matrix6d::Zero()),
                   m_Kd(Matrix6d::Zero()),
@@ -31,6 +33,11 @@ namespace tum_ics_ur_robot_lli {
                     "SimpleEffortCtrlData", 100);
 
             pubTrajMarker = n.advertise<visualization_msgs::MarkerArray>("trajectory_markers", 100);
+            pubCartPath = n.advertise<nav_msgs::Path>("path_cs_des_traj", 10);
+            pubEFPath = n.advertise<nav_msgs::Path>("path_ef_traj", 10);
+
+            path_desired_msg.header.frame_id = "dh_arm_joint_0";
+            path_ef_msg.header.frame_id = "dh_arm_joint_0";
 
             m_vObstacles_pos_0.reserve(m_max_num_obstacles);
 
@@ -600,6 +607,58 @@ namespace tum_ics_ur_robot_lli {
                 default:
                     ROS_ERROR_STREAM("Unknown ControlTask!");
             }
+            
+
+            if ( ellapsed_time - m_last_time > 0.05 ) {
+                // path publishing
+                geometry_msgs::PoseStamped des_pose;
+                geometry_msgs::PoseStamped ef_pose;
+                ow::HomogeneousTransformation Tef_0;
+
+                switch (m_ct_sm.getControlMode()) {
+                    case ControlMode::JS:
+
+                        break;
+                    case ControlMode::CS:
+
+                        ROS_INFO_STREAM("path publishing");
+                    
+                        des_pose.header.frame_id = "dh_arm_joint_0";
+                        des_pose.header.seq = m_path_publish_ctr;
+                        des_pose.header.stamp = ros::Time::now();
+                        des_pose.pose.position.x = Xd[0];
+                        des_pose.pose.position.y = Xd[1];
+                        des_pose.pose.position.z = Xd[2];
+                        path_desired_msg.poses.push_back(des_pose);
+                        path_desired_msg.header.stamp = ros::Time::now();
+                        pubCartPath.publish(path_desired_msg);
+
+                        ef_pose.header.frame_id = "dh_arm_joint_0";
+                        ef_pose.header.seq = m_path_publish_ctr;
+                        ef_pose.header.stamp = ros::Time::now();
+                        Tef_0 = m_ur10_model.T_ef_0(current.q);
+                        ef_pose.pose.position.x = Tef_0.pos().x();
+                        ef_pose.pose.position.y = Tef_0.pos().y();
+                        ef_pose.pose.position.z = Tef_0.pos().z();
+                        path_ef_msg.poses.push_back(ef_pose);
+                        path_ef_msg.header.stamp = ros::Time::now();
+                        pubEFPath.publish(path_ef_msg);
+
+                        m_path_publish_ctr++;
+                        break;
+                    default:
+                        ROS_ERROR_STREAM("bad control mode");
+                        break;
+                }
+
+                if (path_desired_msg.poses.size() > 150) {
+                    // remove the first 10 elements
+                    path_desired_msg.poses.erase(path_desired_msg.poses.begin(), path_desired_msg.poses.begin() + 5);
+                    path_ef_msg.poses.erase(path_ef_msg.poses.begin(), path_ef_msg.poses.begin() + 5);
+                }
+                m_last_time = ellapsed_time;
+            }
+
 
             if (state_changed) {
                 Qd = current.q;

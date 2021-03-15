@@ -4,13 +4,14 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
+        - /TF1
         - /TF1/Frames1
         - /TF1/Frames1/dh_arm_joint_01
-        - /TF1/Frames1/dh_arm_joint_ef1
         - /MarkerArray1
         - /MarkerArray2
-        - /MarkerArray2/Status1
         - /MarkerArray3
+        - /Path3
+        - /Path4
       Splitter Ratio: 0.5124481320381165
     Tree Height: 548
   - Class: rviz/Selection
@@ -338,6 +339,52 @@ Visualization Manager:
         {}
       Queue Size: 100
       Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 25; 255; 0
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.029999999329447746
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic: /path_cs_des_traj
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 239; 41; 41
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.029999999329447746
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic: /path_ef_traj
+      Unreliable: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 90
@@ -366,25 +413,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 2.5462098121643066
+      Distance: 2.3897042274475098
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.4610244333744049
-        Y: 0.18038754165172577
-        Z: 0.22227030992507935
+        X: 0.09345304220914841
+        Y: 0.1422385275363922
+        Z: 0.0850227102637291
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6697967052459717
+      Pitch: 0.984796404838562
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.3553603887557983
+      Yaw: 1.360360860824585
     Saved: ~
 Window Geometry:
   Displays:
