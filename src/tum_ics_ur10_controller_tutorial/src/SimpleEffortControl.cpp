@@ -39,7 +39,19 @@ namespace tum_ics_ur_robot_lli {
             path_desired_msg.header.frame_id = "dh_arm_joint_0";
             path_ef_msg.header.frame_id = "dh_arm_joint_0";
 
+
             m_vObstacles_pos_0.reserve(m_max_num_obstacles);
+            m_obs2joint_vDis.resize(m_max_num_obstacles);
+            m_obs2joint_dis.resize(m_max_num_obstacles);
+
+            for (int i_obs = 0; i_obs< m_max_num_obstacles; i_obs++){
+                m_obs2joint_vDis[i_obs].resize(STD_DOF);
+                m_obs2joint_dis[i_obs].setZero();
+
+                for (int i_joint = 0; i_joint < STD_DOF; i_joint++){
+                    m_obs2joint_vDis[i_obs][i_joint].setZero();
+                }
+            }
 
             m_theta = m_ur10_model.parameterInitalGuess();
 
@@ -485,6 +497,73 @@ namespace tum_ics_ur_robot_lli {
             }
         }
 
+        bool SimpleEffortControl::isObstacleClose(const JointState &current_js, const double rad_inf){
+
+            bool is_obs_close = false;
+
+            VVector3d robot_joint_Xpos_0;
+            robot_joint_Xpos_0.reserve(STD_DOF);
+
+            VVector3d _Xpos_0;
+
+            Vector6d joint2obs_dis;
+            joint2obs_dis.setZero();
+
+            for (int i_obs = 0; i_obs< m_num_obstacles; i_obs++){
+                // m_obs2joint_vDis[i_obs][0] = m_vObstacles_pos_0[i_obs];
+
+                for (int j_joint = 0; j_joint < STD_DOF; j_joint++){
+                    // joint positions in frame 0
+                    robot_joint_Xpos_0[j_joint] = m_ur10_model.T_j_0(current_js.q, j_joint).pos();
+
+                    // obstacle to joint distance vector (with negative sign - at the end it will be a repulsive force)
+                    m_obs2joint_vDis[i_obs][j_joint] = m_vObstacles_pos_0[i_obs] - robot_joint_Xpos_0[j_joint];
+                    joint2obs_dis[j_joint] = m_obs2joint_vDis[i_obs][j_joint].norm();
+                }
+
+                // ROS_WARN_STREAM("Obstacle "<< i_obs << " distance to joints [m]: " << joint2obs_dis.transpose());
+
+                for (int j_joint = 1; j_joint < STD_DOF; j_joint++){
+                    Vector3d vjm1_j = robot_joint_Xpos_0[j_joint] - robot_joint_Xpos_0[j_joint-1];
+                    double link_length = vjm1_j.norm();
+
+                    // TODO adjust modifier
+                    link_length *= 0.7;
+
+                    // ROS_INFO_STREAM("Link "<< j_joint<< " modified length[m] = "<< link_length);
+                    
+                    if ( joint2obs_dis[j_joint-1] < link_length && joint2obs_dis[j_joint-1] < link_length){
+                        // ROS_INFO_STREAM("Link "<< j_joint<< " obstacle is close");
+
+                        Vector3d vjm1_obs = m_obs2joint_vDis[i_obs][j_joint-1];
+                        Vector3d vj_obs = m_obs2joint_vDis[i_obs][j_joint];
+
+                        Vector3d v_linkj_obs = vj_obs.array() * (Vector3d::Ones() - vjm1_j/link_length).array();
+                        double link_obs_dis = v_linkj_obs.norm();
+
+                        if ( link_obs_dis < joint2obs_dis[j_joint-1]){
+                            m_obs2joint_vDis[i_obs][j_joint-1] = v_linkj_obs;
+                        }
+
+                        if ( link_obs_dis < joint2obs_dis[j_joint]){
+                            m_obs2joint_vDis[i_obs][j_joint] = v_linkj_obs;
+                        }
+                    }
+                }   
+
+                             
+
+                for (int j_joint = 0; j_joint < STD_DOF; j_joint++){
+                    m_obs2joint_dis[i_obs][j_joint] = m_obs2joint_vDis[i_obs][j_joint].norm();
+                    if (m_obs2joint_dis[i_obs][j_joint] < rad_inf){
+                        is_obs_close = true;
+                    }
+                }   
+                // ROS_WARN_STREAM("Obstacle2 "<< i_obs << " distance to joints [m]: " << m_obs2joint_dis[i_obs].transpose());
+            }
+
+            return is_obs_close;
+        }
 
         Vector6d SimpleEffortControl::update(const RobotTime &time,
                                              const JointState &current) {

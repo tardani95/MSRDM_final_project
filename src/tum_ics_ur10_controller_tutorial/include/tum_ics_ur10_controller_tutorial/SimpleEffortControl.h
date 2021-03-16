@@ -50,10 +50,14 @@ namespace tum_ics_ur_robot_lli {
             size_t m_path_publish_ctr;
 
             Vector3d m_target_pos;
-            static const size_t m_max_num_obstacles = 4;
-            size_t m_num_obstacles;
+
+            static const int m_max_num_obstacles = 4;
+            int m_num_obstacles;
             VVector3d m_vObstacles_pos_0;
             Vector3d m_ef_traj_xd;
+
+            std::vector<VVector3d> m_obs2joint_vDis;
+            std::vector<Vector6d> m_obs2joint_dis;
 
             ur::UR10Model m_ur10_model;
             MatrixXd m_theta;
@@ -121,6 +125,8 @@ namespace tum_ics_ur_robot_lli {
             VVector3d sinusoid_traj_gen(const Vector3d amp, const Vector3d w, const Vector3d phase_shift, const Vector3d zero_offset, double time);
 
             void publishPathes(const JointState &current_js, const Vector6d &Qdes, const Vector6d &Xdes, double current_time, double update_hz, int max_path_size);
+
+            bool isObstacleClose(const JointState &current_js, const double rad_inf);
 
             Vector6d update(const RobotTime &time, const JointState &current);
 
