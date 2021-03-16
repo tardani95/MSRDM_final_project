@@ -17,7 +17,7 @@ namespace tum_ics_ur_robot_lli {
         enum ControlTask {
             BREAK = 0,
             MOVE_OUT_SINGULARITY,
-            MOVE_DOWN_AND_ROTATE_UPWARDS,
+            MOVE_TO_CIRCULAR_TRAJECTORY_START,
             MOVE_IN_CIRCLE_POINT_UPWARDS,
             OBSTACLE_AVOIDANCE,
         };

@@ -42,16 +42,20 @@ namespace tum_ics_ur_robot_lli {
             ros::Publisher pubTrajMarker;
             ros::Publisher pubCartPath;
             ros::Publisher pubEFPath;
+            ros::Publisher pubTargetPose;
 
             visualization_msgs::MarkerArray m_marker_array;
             nav_msgs::Path path_desired_msg;
             nav_msgs::Path path_ef_msg;
+            geometry_msgs::PoseStamped target_pose_msg;
 
             double m_last_time;
             size_t m_path_publish_ctr;
 
             Vector3d m_target_pos;
+            Vector3d m_target_pos0;
             Vector3d m_ef_traj_xd;
+            Vector3d m_ef_x;
 
             static const int m_max_num_obstacles = 4;
             int m_num_obstacles;
@@ -134,6 +138,8 @@ namespace tum_ics_ur_robot_lli {
             void publishPathes(const JointState &current_js, const Vector6d &Qdes, const Vector6d &Xdes, double current_time, double update_hz, int max_path_size);
 
             bool isObstacleClose(const JointState &current_js, const double rad_inf);
+
+            ow::HomogeneousTransformation getTargetHT(const Vector3d &fromPosition, const Vector3d &inDirectionOfPosition);
 
             Vector6d update(const RobotTime &time, const JointState &current);
 

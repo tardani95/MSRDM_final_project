@@ -169,7 +169,7 @@ namespace tum_ics_ur_robot_lli {
                 }
                     break;
 
-                case ControlTask::MOVE_DOWN_AND_ROTATE_UPWARDS: {
+                case ControlTask::MOVE_TO_CIRCULAR_TRAJECTORY_START: {
                     ROS_INFO_STREAM("Move down and rotate end-effector upwards with cartesian space control");
                     control_mode = ControlMode::CS;
                     operational_control = true;

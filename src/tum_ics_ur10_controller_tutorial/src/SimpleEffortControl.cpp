@@ -35,9 +35,11 @@ namespace tum_ics_ur_robot_lli {
             pubTrajMarker = n.advertise<visualization_msgs::MarkerArray>("trajectory_markers", 100);
             pubCartPath = n.advertise<nav_msgs::Path>("path_cs_des_traj", 10);
             pubEFPath = n.advertise<nav_msgs::Path>("path_ef_traj", 10);
+            pubTargetPose = n.advertise<geometry_msgs::PoseStamped>("target_pose2", 100);
 
             path_desired_msg.header.frame_id = "dh_arm_joint_0";
             path_ef_msg.header.frame_id = "dh_arm_joint_0";
+            target_pose_msg.header.frame_id = "dh_arm_joint_0";
 
             m_vObstacles_pos_0.reserve(m_max_num_obstacles);
             m_obs2joint_vDis.resize(m_max_num_obstacles);
@@ -102,7 +104,7 @@ namespace tum_ics_ur_robot_lli {
             m_target_pos[0] = target_x.x;
             m_target_pos[1] = target_x.y;
             m_target_pos[2] = target_x.z;
-            // ROS_WARN_STREAM("Target position [m]: " << m_target_pos.transpose());
+            ROS_WARN_STREAM("Target position [m]: " << m_target_pos.transpose());
         }
 
         bool SimpleEffortControl::loadControllerGains(std::string t_ns, Matrix6d &p_Kd, Matrix6d &p_Kp, Matrix6d &p_Ki) {
@@ -484,6 +486,22 @@ namespace tum_ics_ur_robot_lli {
         void SimpleEffortControl::publishPathes(const JointState &current_js, const Vector6d &Qdes, const Vector6d &Xdes, double current_time, double update_hz, int max_path_size){
             
             if ( (current_time - m_last_time) > (1 / update_hz) ) {
+
+                ROS_INFO_STREAM("target_X_R calc");
+                
+                m_target_pos0 = m_ur10_model.T_B_0() * m_target_pos;
+                ow::HomogeneousTransformation target_X_R = getTargetHT(m_ef_x, m_target_pos);
+
+
+                target_pose_msg.header.stamp = ros::Time::now();
+                target_pose_msg.header.seq = m_path_publish_ctr;
+                target_pose_msg.pose = target_X_R.toPoseMsg();
+
+                ROS_INFO_STREAM("target_X_R pose: " << target_X_R.toPoseMsg());
+                ROS_INFO_STREAM("target_X_R_pose_msg: " << target_pose_msg.pose);
+
+                pubTargetPose.publish(target_pose_msg);
+
                 // path publishing
                 geometry_msgs::PoseStamped des_pose;
                 geometry_msgs::PoseStamped ef_pose;
@@ -615,11 +633,32 @@ namespace tum_ics_ur_robot_lli {
             return is_obs_close;
         }
 
+        ow::HomogeneousTransformation SimpleEffortControl::getTargetHT(const Vector3d &fromPosition, const Vector3d &inDirectionOfPosition){
+            Vector3d vDir1 = inDirectionOfPosition - fromPosition;
+            // vDir1 /= vDir1.norm();
+
+            Vector3d hV1 = vDir1;
+            hV1[2] +=vDir1.norm();
+            // hV1 /= hV1.norm();
+
+            Vector3d vDir2 = vDir1.cross(hV1);
+            Vector3d vDir3 = vDir1.cross(vDir2);
+
+            ow::HomogeneousTransformation HT;
+            vDir1 /= vDir1.norm();
+            vDir2 /= vDir2.norm();
+            vDir3 /= vDir3.norm();
+            HT.affine() << vDir1, vDir2, vDir3, fromPosition;
+            return HT;
+        }
+
         Vector6d SimpleEffortControl::update(const RobotTime &time,
                                              const JointState &current) {
 
             // time
             double ellapsed_time = time.tD();
+
+            m_ef_x = m_ur10_model.T_ef_0(current.q).pos();
 
             /* ============= variable initialization ============== */
 
@@ -672,6 +711,7 @@ namespace tum_ics_ur_robot_lli {
                         state_changed = true;
                         m_qStart = current.q;
 
+
                         ROS_WARN_STREAM(
                                 "State Machine: Move out singularity!\n Task time = " << task_time << "\n Goal [rad] = "
                                                                                       << m_qNonSing.transpose());
@@ -699,27 +739,30 @@ namespace tum_ics_ur_robot_lli {
 
                     if (!m_ct_sm.isRunning(ellapsed_time)) {
                         // TODO adjust time
-                        double task_time = 6.0;
-                        m_ct_sm.changeTask(ControlTask::MOVE_DOWN_AND_ROTATE_UPWARDS, task_time, ellapsed_time);
+                        double task_time = 3.0;
+                        m_ct_sm.changeTask(ControlTask::MOVE_TO_CIRCULAR_TRAJECTORY_START, task_time, ellapsed_time);
                         state_changed = true;
+
+                        // m_ct_sm.startGazing();
 
                         m_xStart = tf2pose(m_ur10_model.T_ef_0(current.q));
                         m_xGoal = m_xStart;
 
                         // move down
-                        m_xGoal[2] = 0.2;
+                        m_xGoal.head(3) = sinusoid_traj_gen(m_circ_traj_radius,m_circ_traj_frequency, m_circ_traj_phase_shift, m_circ_traj_center, 0.0)[0];
+
 
                         // rotate upwards (euler angles ZYX)
                         // m_xGoal.tail(3) << 2.1715, -1.5, 0.9643;
 
-                        ROS_WARN_STREAM("State Machine: Move down and rotate EF upwards!\n Task time = " << task_time
+                        ROS_WARN_STREAM("State Machine: Move to circular trajectory start point and start gazing!\n Task time = " << task_time
                                                                                                          << "\n Goal [3x m, 3x rad] = "
                                                                                                          << m_xGoal.transpose());
                     }
                 }
                     break;
 
-                case ControlTask::MOVE_DOWN_AND_ROTATE_UPWARDS: {
+                case ControlTask::MOVE_TO_CIRCULAR_TRAJECTORY_START: {
 
                     // TODO adjust goal name
                     vQXd = getJointPVT5(m_xStart, m_xGoal, m_ct_sm.manouverTime(ellapsed_time), m_ct_sm.getTaskTime());
@@ -803,7 +846,7 @@ namespace tum_ics_ur_robot_lli {
             }
             
             // publishing path msgs
-            double update_hz = 20;
+            double update_hz = 10;
             int max_path_size = 150;
             publishPathes(current, Qd, Xd, ellapsed_time, update_hz, max_path_size);
 
