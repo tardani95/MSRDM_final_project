@@ -50,14 +50,15 @@ namespace tum_ics_ur_robot_lli {
             size_t m_path_publish_ctr;
 
             Vector3d m_target_pos;
+            Vector3d m_ef_traj_xd;
 
             static const int m_max_num_obstacles = 4;
             int m_num_obstacles;
-            VVector3d m_vObstacles_pos_0;
-            Vector3d m_ef_traj_xd;
 
-            std::vector<VVector3d> m_obs2joint_vDis;
-            std::vector<Vector6d> m_obs2joint_dis;
+            VVector3d m_vObstacles_pos_0;
+            QVector<VVector3d> m_obs2joint_vDis;
+            QVector<Vector6d> m_obs2joint_dis;
+            QVector<Vector6i> m_obs2joint_act;
 
             ur::UR10Model m_ur10_model;
             MatrixXd m_theta;

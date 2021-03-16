@@ -39,14 +39,15 @@ namespace tum_ics_ur_robot_lli {
             path_desired_msg.header.frame_id = "dh_arm_joint_0";
             path_ef_msg.header.frame_id = "dh_arm_joint_0";
 
-
             m_vObstacles_pos_0.reserve(m_max_num_obstacles);
             m_obs2joint_vDis.resize(m_max_num_obstacles);
             m_obs2joint_dis.resize(m_max_num_obstacles);
+            m_obs2joint_act.resize(m_max_num_obstacles);
 
             for (int i_obs = 0; i_obs< m_max_num_obstacles; i_obs++){
                 m_obs2joint_vDis[i_obs].resize(STD_DOF);
                 m_obs2joint_dis[i_obs].setZero();
+                m_obs2joint_act[i_obs].setZero();
 
                 for (int i_joint = 0; i_joint < STD_DOF; i_joint++){
                     m_obs2joint_vDis[i_obs][i_joint].setZero();
@@ -552,14 +553,19 @@ namespace tum_ics_ur_robot_lli {
                 }   
 
                              
-
+                m_obs2joint_act[i_obs].setZero();
                 for (int j_joint = 0; j_joint < STD_DOF; j_joint++){
-                    m_obs2joint_dis[i_obs][j_joint] = m_obs2joint_vDis[i_obs][j_joint].norm();
-                    if (m_obs2joint_dis[i_obs][j_joint] < rad_inf){
+
+                    double obs2joint_dis = m_obs2joint_vDis[i_obs][j_joint].norm();
+                    
+                    m_obs2joint_dis[i_obs][j_joint] = obs2joint_dis;
+
+                    if (obs2joint_dis < rad_inf){
                         is_obs_close = true;
+                        m_obs2joint_act[i_obs][j_joint] = 1;
                     }
                 }   
-                // ROS_WARN_STREAM("Obstacle2 "<< i_obs << " distance to joints [m]: " << m_obs2joint_dis[i_obs].transpose());
+                // ROS_WARN_STREAM("Obstacle "<< i_obs << " act joints [bool]: " << m_obs2joint_act[i_obs].transpose());
             }
 
             return is_obs_close;
@@ -596,8 +602,11 @@ namespace tum_ics_ur_robot_lli {
 
             if ( isObstacleClose(current, radial_influnce) ){
                 // obstacle avoidance
+                ROS_INFO_STREAM("Obstacle avoidance!");
                 for (int obs_i = 0; obs_i < m_num_obstacles; obs_i++){
-                    ROS_WARN_STREAM("Obstacle "<< obs_i << " 's distance to joints [m]: " << m_obs2joint_dis[obs_i].transpose() );
+                    // ROS_WARN_STREAM("Obstacle "<< obs_i << " 's distance to joints [m]: " << m_obs2joint_dis[obs_i].transpose() );
+                    ROS_WARN_STREAM("Obstacle "<< obs_i << " act joints [bool]: " << m_obs2joint_act[obs_i].transpose());
+
                 }
             }
 
