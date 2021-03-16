@@ -35,11 +35,12 @@ namespace tum_ics_ur_robot_lli {
             pubTrajMarker = n.advertise<visualization_msgs::MarkerArray>("trajectory_markers", 100);
             pubCartPath = n.advertise<nav_msgs::Path>("path_cs_des_traj", 10);
             pubEFPath = n.advertise<nav_msgs::Path>("path_ef_traj", 10);
-            pubTargetPose = n.advertise<geometry_msgs::PoseStamped>("target_pose2", 100);
+            pubTargetPose = n.advertise<geometry_msgs::PoseStamped>("target_pose", 100);
 
             path_desired_msg.header.frame_id = "dh_arm_joint_0";
             path_ef_msg.header.frame_id = "dh_arm_joint_0";
             target_pose_msg.header.frame_id = "dh_arm_joint_0";
+            // target_pose_msg.header.frame_id = "dh_arm_joint_3";
 
             m_vObstacles_pos_0.reserve(m_max_num_obstacles);
             m_obs2joint_vDis.resize(m_max_num_obstacles);
@@ -104,7 +105,8 @@ namespace tum_ics_ur_robot_lli {
             m_target_pos[0] = target_x.x;
             m_target_pos[1] = target_x.y;
             m_target_pos[2] = target_x.z;
-            ROS_WARN_STREAM("Target position [m]: " << m_target_pos.transpose());
+            m_target_pos = m_ur10_model.T_B_0() * m_target_pos;
+            // ROS_WARN_STREAM("Target position [m]: " << m_target_pos.transpose());
         }
 
         bool SimpleEffortControl::loadControllerGains(std::string t_ns, Matrix6d &p_Kd, Matrix6d &p_Kp, Matrix6d &p_Ki) {
@@ -486,19 +488,19 @@ namespace tum_ics_ur_robot_lli {
         void SimpleEffortControl::publishPathes(const JointState &current_js, const Vector6d &Qdes, const Vector6d &Xdes, double current_time, double update_hz, int max_path_size){
             
             if ( (current_time - m_last_time) > (1 / update_hz) ) {
-
-                ROS_INFO_STREAM("target_X_R calc");
                 
-                m_target_pos0 = m_ur10_model.T_B_0() * m_target_pos;
-                ow::HomogeneousTransformation target_X_R = getTargetHT(m_ef_x, m_target_pos0);
-
+                // m_target_pos0 = m_ur10_model.T_B_0() * m_target_pos;
+                ow::HomogeneousTransformation target_X_R = getTargetHT(m_ef_x, m_target_pos);
 
                 target_pose_msg.header.stamp = ros::Time::now();
                 target_pose_msg.header.seq = m_path_publish_ctr;
                 target_pose_msg.pose = target_X_R.toPoseMsg();
-
-                ROS_INFO_STREAM("target_X_R pose: " << target_X_R.toPoseMsg());
-                ROS_INFO_STREAM("target_X_R_pose_msg: " << target_pose_msg.pose);
+                
+                Matrix3d rot_mat = target_X_R.matrix().topLeftCorner(3, 3);
+                Vector3d euler_angles = rot_mat.eulerAngles(2, 1, 0);
+                ROS_INFO_STREAM("target_X_R ZYX: " << target_X_R.orien().eulerAngles(2,1,0).transpose());
+                ROS_INFO_STREAM("target_X_R ZYX eigen: " << euler_angles.transpose());
+                // ROS_INFO_STREAM("target_X_R_pose_msg: " << target_pose_msg.pose);
 
                 pubTargetPose.publish(target_pose_msg);
 
@@ -638,7 +640,7 @@ namespace tum_ics_ur_robot_lli {
             // vDir1 /= vDir1.norm();
 
             Vector3d hV1 = vDir1;
-            hV1[2] +=vDir1.norm();
+            hV1[0] +=vDir1.norm();
             // hV1 /= hV1.norm();
 
             Vector3d vDir2 = hV1.cross(vDir1);
