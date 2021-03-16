@@ -33,9 +33,9 @@ namespace tum_ics_ur_robot_lli {
         }
 
         void ControlTaskStateMachine::initControllerGains(ControlMode cm,
-                                                          Matrix6d Kp,
-                                                          Matrix6d Kd,
-                                                          Matrix6d Ki) {
+                                                          const Matrix6d &Kd,
+                                                          const Matrix6d &Kp,
+                                                          const Matrix6d &Ki) {
             switch (cm) {
                 case ControlMode::JS: {
                     m_JS_Kp = Kp;
@@ -74,16 +74,57 @@ namespace tum_ics_ur_robot_lli {
             return m_Kp;
         }
 
-        Matrix6d ControlTaskStateMachine::getKpCS() {
-            return m_CS_Kp;
+        Matrix6d ControlTaskStateMachine::getKp(ControlMode cm){
+            switch (cm)
+            {
+            case ControlMode::JS:
+                return m_JS_Kp;
+            case ControlMode::CS:
+                return m_CS_Kp;
+            case ControlMode::MIXED:
+                return m_MX_Kp;
+            case ControlMode::IMPEDANCE:
+                return m_IM_Kp;
+            default:
+                return m_Kp;
+            }
         }
+
+        Matrix6d ControlTaskStateMachine::getKpIM() {
+            return getKp(ControlMode::IMPEDANCE);
+        }
+
+        Matrix6d ControlTaskStateMachine::getKpCS() {
+            return getKp(ControlMode::CS);
+        }
+
 
         Matrix6d ControlTaskStateMachine::getKd() {
             return m_Kd;
         }
-        
+
+        Matrix6d ControlTaskStateMachine::getKd(ControlMode cm){
+            switch (cm)
+            {
+            case ControlMode::JS:
+                return m_JS_Kd;
+            case ControlMode::CS:
+                return m_CS_Kd;
+            case ControlMode::MIXED:
+                return m_MX_Kd;
+            case ControlMode::IMPEDANCE:
+                return m_IM_Kd;
+            default:
+                return m_Kd;
+            }
+        }
+
+        Matrix6d ControlTaskStateMachine::getKdIM() {
+            return getKd(ControlMode::IMPEDANCE);
+        }
+
         Matrix6d ControlTaskStateMachine::getKdCS() {
-            return m_CS_Kd;
+            return getKd(ControlMode::CS);
         }
 
         Matrix6d ControlTaskStateMachine::getKi() {

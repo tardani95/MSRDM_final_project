@@ -15,11 +15,6 @@ joint_space_ctrl:
   gains_i: [ 1, 1, 1, 1, 1, 1 ]
   # gains_i: [ 5, 5, 5, 5, 5, 5]
 
-  # Desired position in deg [J1, J2, J3, J4, J5, J6], e.g. [90, -45, 30, -70, 40, 40]
-  # Home: [0, -90, 0, -90, 0, 0]
-  # goal1: [ 0, -75, 75, 0, 90, 0 ]
-  # time: 10.0
-
 cartesian_space_ctrl:
   # [x y z, rx, ry, rz]
   #derivative
@@ -35,10 +30,16 @@ cartesian_space_ctrl:
   # gains_i: [ 1, 1, 1, 1, 1, 1]
   # gains_i: [ 5, 5, 5, 5, 5, 5]
 
-  # Desired position in deg [J1, J2, J3, J4, J5, J6], e.g. [90, -45, 30, -70, 40, 40]
-  # Home: [0, -90, 0, -90, 0, 0]
-  # goal1: [ 0, -90, 90, 0, 90, 0 ]
-  # time: 3.0
+impedance_ctrl:
+  # [x y z, rx, ry, rz]
+  #derivative - damping
+  gains_d: [ 2, 2, 2,   0, 0, 0 ]
+
+  #proportional - stifness
+  gains_p: [ 5, 5, 5,   0, 0, 0 ]
+
+  #integral - only because unified parameter loading
+  gains_i: [ 0, 0, 0, 0, 0, 0 ]
 
 other_parameter_settings:
 

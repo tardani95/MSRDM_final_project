@@ -62,13 +62,20 @@ namespace tum_ics_ur_robot_lli {
 
             ~ControlTaskStateMachine();
 
-            void initControllerGains(ControlMode cm, Matrix6d Kp, Matrix6d Kd, Matrix6d Ki);
+            void initControllerGains(ControlMode cm, 
+                                    const Matrix6d &Kd, 
+                                    const Matrix6d &Kp, 
+                                    const Matrix6d &Ki);
 
             Matrix6d getKp();
+            Matrix6d getKp(ControlMode cm);
             Matrix6d getKpCS();
+            Matrix6d getKpIM();
 
             Matrix6d getKd();
+            Matrix6d getKd(ControlMode cm);
             Matrix6d getKdCS();
+            Matrix6d getKdIM();
 
             Matrix6d getKi();
 

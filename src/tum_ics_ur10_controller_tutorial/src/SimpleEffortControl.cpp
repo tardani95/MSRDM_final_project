@@ -252,38 +252,8 @@ namespace tum_ics_ur_robot_lli {
             if (m_radial_influence <= 0.1) {
                 m_radial_influence = 0.1;
                 ROS_ERROR_STREAM("radial_influence: is not in the interval [ 0.1 , inf], setting to default: " << m_radial_influence);
-            }            
-
-            return true;
-        }
-
-        bool SimpleEffortControl::init() {
-            ROS_WARN_STREAM("SimpleEffortControl::init");
-
-            if (!loadControllerGains("joint_space_ctrl", m_JS_Kd, m_JS_Kp, m_JS_Ki)) {
-                ROS_ERROR_STREAM(
-                        "SimpleEffortControl init(): joint_space_ctrl could not be initialized");
-                m_error = true;
-                return false;
-            } else {
-                m_ct_sm.initControllerGains(ControlMode::JS, m_JS_Kp, m_JS_Kd, m_JS_Ki);
             }
 
-            if (!loadControllerGains("cartesian_space_ctrl", m_CS_Kd, m_CS_Kp, m_CS_Ki)) {
-                ROS_ERROR_STREAM(
-                        "SimpleEffortControl init(): cartesian_space_ctrl could not be initialized");
-                m_error = true;
-                return false;
-            } else {
-                m_ct_sm.initControllerGains(ControlMode::CS, m_CS_Kp, m_CS_Kd, m_CS_Ki);
-            }
-
-            if (!loadConfigParameters()) {
-                ROS_ERROR_STREAM(
-                        "SimpleEffortControl init(): config parameters could not be initialized");
-                m_error = true;
-                return false;
-            }
 
             ROS_WARN_STREAM("Total Time [s]: " << m_totalTime);
             ROS_WARN_STREAM("Time for moving out singularity [s]: " << m_NonSingTime);
@@ -302,6 +272,49 @@ namespace tum_ics_ur_robot_lli {
             ROS_WARN_STREAM("Link modifier [-]: " << m_link_modifier);
             ROS_WARN_STREAM("Radial influence [-]: " << m_radial_influence);
 
+            return true;
+        }
+
+        bool SimpleEffortControl::init() {
+            ROS_WARN_STREAM("SimpleEffortControl::init");
+
+            Matrix6d t_Kd, t_Kp, t_Ki;
+
+            if (!loadControllerGains("joint_space_ctrl", t_Kd, t_Kp, t_Ki)) {
+                ROS_ERROR_STREAM(
+                        "SimpleEffortControl init(): joint_space_ctrl could not be initialized");
+                m_error = true;
+                return false;
+            } else {
+                m_ct_sm.initControllerGains(ControlMode::JS, t_Kd, t_Kp, t_Ki);
+            }
+
+            if (!loadControllerGains("cartesian_space_ctrl", t_Kd, t_Kp, t_Ki)) {
+                ROS_ERROR_STREAM(
+                        "SimpleEffortControl init(): cartesian_space_ctrl could not be initialized");
+                m_error = true;
+                return false;
+            } else {
+                m_ct_sm.initControllerGains(ControlMode::CS, t_Kd, t_Kp, t_Ki);
+            }
+
+            if (!loadControllerGains("impedance_ctrl", t_Kd, t_Kp, t_Ki)) {
+                ROS_ERROR_STREAM(
+                        "SimpleEffortControl init(): impedance_ctrl could not be initialized");
+                m_error = true;
+                return false;
+            } else {
+                m_ct_sm.initControllerGains(ControlMode::IMPEDANCE, t_Kd, t_Kp, t_Ki);
+            }
+
+            if (!loadConfigParameters()) {
+                ROS_ERROR_STREAM(
+                        "SimpleEffortControl init(): config parameters could not be initialized");
+                m_error = true;
+                return false;
+            }
+
+
             // initalize the adaptive robot model parameters
             if (!m_ur10_model.initRequest(n)) {
                 ROS_ERROR_STREAM("Error initalizing ur10 model");
@@ -309,7 +322,8 @@ namespace tum_ics_ur_robot_lli {
                 return false;
             }
 
-            ros::Duration(1.0).sleep();
+            // sleep to check out the settings 
+            ros::Duration(2.0).sleep();
 
             return true;
         }
