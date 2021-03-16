@@ -27,11 +27,11 @@ cartesian_space_ctrl:
   # gains_d: [ 200, 75, 75, 73, 15, 5 ]
 
   #proportional
-  gains_p: [ 5, 5, 5,   0, 0, 0 ]
-  # gains_p: [ 200, 612.71801, 612.71801, 150, 40, 5 ]
+  # gains_p: [ 5, 5, 5,   0, 0, 0 ]
+  gains_p: [ 10, 10, 10,   0, 0, 0 ]
 
   #integral
-  gains_i: [ 0, 0, 0, 0, 0, 0 ]
+  gains_i: [ 2, 2, 2, 0, 0, 0 ]
   # gains_i: [ 1, 1, 1, 1, 1, 1]
   # gains_i: [ 5, 5, 5, 5, 5, 5]
 
@@ -55,3 +55,7 @@ other_parameter_settings:
     radius: [ 0.25, 0.25, 0.0 ] # [m]
     frequency: [ 0.5, 0.5, 0.0 ] # [rad/s]
     phase: [ 0.0, 90.0, 0.0 ] # [DEG]
+
+  # collision avoidance
+  link_modifier: 0.7
+  radial_influence: 0.3

@@ -54,6 +54,8 @@ namespace tum_ics_ur_robot_lli {
 
             static const int m_max_num_obstacles = 4;
             int m_num_obstacles;
+            double m_link_modifier;
+            double m_radial_influence;
 
             VVector3d m_vObstacles_pos_0;
             QVector<VVector3d> m_obs2joint_vDis;

@@ -240,6 +240,20 @@ namespace tum_ics_ur_robot_lli {
                 m_circ_traj_frequency(i) = vec[i];
             }
 
+            // link_modifier
+            ros::param::get(ns + "/link_modifier", m_link_modifier);
+            if (m_link_modifier <= 1.0 && m_link_modifier > 0.5) {
+                m_link_modifier = 0.7;
+                ROS_ERROR_STREAM("time_move_out_sing_state: is not in the interval [ 0.5 ; 1.0 ], setting to default: " << m_link_modifier);
+            }
+
+            // radial_influence
+            ros::param::get(ns + "/radial_influence", m_radial_influence);
+            if (m_radial_influence <= 0.1) {
+                m_radial_influence = 0.1;
+                ROS_ERROR_STREAM("time_move_out_sing_state: is not in the interval [ 0.1 , inf], setting to default: " << m_radial_influence);
+            }            
+
             return true;
         }
 
@@ -284,6 +298,9 @@ namespace tum_ics_ur_robot_lli {
                                              "\nRadius [m]: " << m_circ_traj_radius.transpose() <<
                                              "\nPhase Shift [rad]: "<< m_circ_traj_phase_shift.transpose() <<
                                              "\nFrequency [rad/s]: " << m_circ_traj_frequency.transpose());
+
+            ROS_WARN_STREAM("Link modifier [-]: " << m_link_modifier);
+            ROS_WARN_STREAM("Radial influence [-]: " << m_radial_influence);
 
             // initalize the adaptive robot model parameters
             if (!m_ur10_model.initRequest(n)) {
@@ -528,8 +545,7 @@ namespace tum_ics_ur_robot_lli {
                     Vector3d vjm1_j = robot_joint_Xpos_0[j_joint] - robot_joint_Xpos_0[j_joint-1];
                     double link_length = vjm1_j.norm();
 
-                    // TODO adjust modifier
-                    link_length *= 0.7;
+                    link_length *= m_link_modifier;
 
                     // ROS_INFO_STREAM("Link "<< j_joint<< " modified length[m] = "<< link_length);
                     
@@ -598,9 +614,7 @@ namespace tum_ics_ur_robot_lli {
             tau_obs_avoid.setZero();
             tau_grav_comp.setZero();
 
-            double radial_influnce = 0.4;
-
-            if ( isObstacleClose(current, radial_influnce) ){
+            if ( isObstacleClose(current, m_radial_influence) ){
                 // obstacle avoidance
                 ROS_INFO_STREAM("Obstacle avoidance!");
                 for (int obs_i = 0; obs_i < m_num_obstacles; obs_i++){
