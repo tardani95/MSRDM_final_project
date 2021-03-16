@@ -58,4 +58,4 @@ other_parameter_settings:
 
   # collision avoidance
   link_modifier: 0.7
-  radial_influence: 0.3
+  radial_influence: 0.5

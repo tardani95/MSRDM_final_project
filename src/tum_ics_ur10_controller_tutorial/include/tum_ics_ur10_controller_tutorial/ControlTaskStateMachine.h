@@ -65,8 +65,10 @@ namespace tum_ics_ur_robot_lli {
             void initControllerGains(ControlMode cm, Matrix6d Kp, Matrix6d Kd, Matrix6d Ki);
 
             Matrix6d getKp();
+            Matrix6d getKpCS();
 
             Matrix6d getKd();
+            Matrix6d getKdCS();
 
             Matrix6d getKi();
 

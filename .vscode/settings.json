@@ -18,6 +18,7 @@
         "tuple": "cpp",
         "*.txx": "cpp",
         "string_view": "cpp",
-        "cmath": "cpp"
+        "cmath": "cpp",
+        "complex": "cpp"
     }
 }

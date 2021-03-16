@@ -65,6 +65,8 @@ namespace tum_ics_ur_robot_lli {
             ur::UR10Model m_ur10_model;
             MatrixXd m_theta;
 
+            Vector6d m_tau_ur10_mod_comp;
+
             Matrix6d m_Kp;
             Matrix6d m_Kd;
             Matrix6d m_Ki;
@@ -119,7 +121,8 @@ namespace tum_ics_ur_robot_lli {
                          const JointState &current_js,
                          const Vector6d &vQXrp,
                          const Vector6d &vQXrpp,
-                         const Vector6d &vQXp);
+                         const Vector6d &vQXp,
+                         Vector6d &tau_ur10_model_comp);
 
             Vector6d antiWindUp(Vector6d tau);
 

@@ -74,8 +74,16 @@ namespace tum_ics_ur_robot_lli {
             return m_Kp;
         }
 
+        Matrix6d ControlTaskStateMachine::getKpCS() {
+            return m_CS_Kp;
+        }
+
         Matrix6d ControlTaskStateMachine::getKd() {
             return m_Kd;
+        }
+        
+        Matrix6d ControlTaskStateMachine::getKdCS() {
+            return m_CS_Kd;
         }
 
         Matrix6d ControlTaskStateMachine::getKi() {
