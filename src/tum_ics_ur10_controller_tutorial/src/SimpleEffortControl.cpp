@@ -169,6 +169,13 @@ namespace tum_ics_ur_robot_lli {
                 return false;
             }
 
+            // sleep_after_loading_parameters
+            ros::param::get(ns + "/sleep_after_loading_parameters", m_sleep_param_load);
+            if (m_totalTime <= 0) {
+                ROS_ERROR_STREAM("sleep_after_loading_parameters: is negative:" << m_sleep_param_load);
+                m_sleep_param_load = 1.0;
+            }
+
             // total time
             ros::param::get(ns + "/time_total", m_totalTime);
             if (m_totalTime <= 0) {
@@ -279,6 +286,10 @@ namespace tum_ics_ur_robot_lli {
             ROS_WARN_STREAM("SimpleEffortControl::init");
 
             Matrix6d t_Kd, t_Kp, t_Ki;
+            t_Kd.setZero();
+            t_Kp.setZero();
+            t_Ki.setZero();
+            
 
             if (!loadControllerGains("joint_space_ctrl", t_Kd, t_Kp, t_Ki)) {
                 ROS_ERROR_STREAM(
@@ -323,7 +334,7 @@ namespace tum_ics_ur_robot_lli {
             }
 
             // sleep to check out the settings 
-            ros::Duration(2.0).sleep();
+            ros::Duration(m_sleep_param_load).sleep();
 
             return true;
         }

@@ -2,18 +2,17 @@
 # P and D gains for each axis.
 joint_space_ctrl:
   #derivative
-  gains_d: [ 100, 75, 75, 73, 15, 5 ]
-  # gains_d: [ 200, 75, 75, 73, 15, 5 ]
+  # gains_d: [ 100, 75, 75, 73, 15, 5 ]
+  gains_d: [ 100, 100, 100, 75, 15, 5 ]
 
   #proportional
   # gains_p: [ 50, 612.71801, 612.71801, 150, 40, 5 ]
-  gains_p: [ 5, 8.1696, 8.1696, 2.0548, 2.6667, 1.0000 ]
-  # gains_p: [ 200, 612.71801, 612.71801, 150, 40, 5 ]
+  # gains_p: [ 5, 8.1696, 8.1696, 2.0548, 2.6667, 1.0000 ]
+  gains_p: [ 8, 15, 15, 2, 3, 1.0000 ]
 
   #integral
   # gains_i: [ 0, 0, 0, 0, 0, 0]
-  gains_i: [ 1, 1, 1, 1, 1, 1 ]
-  # gains_i: [ 5, 5, 5, 5, 5, 5]
+  gains_i: [ 2, 2, 2, 1, 1, 1 ]
 
 cartesian_space_ctrl:
   # [x y z, rx, ry, rz]
@@ -42,6 +41,8 @@ impedance_ctrl:
   gains_i: [ 0, 0, 0, 0, 0, 0 ]
 
 other_parameter_settings:
+
+  sleep_after_loading_parameters: 0.1
 
   time_total: 2000
 

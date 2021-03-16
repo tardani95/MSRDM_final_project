@@ -15,6 +15,7 @@ namespace tum_ics_ur_robot_lli {
         private:
             bool m_startFlag;
 
+            double m_sleep_param_load;
             double m_totalTime;
             double m_NonSingTime;
             Vector6d m_qNonSing;
