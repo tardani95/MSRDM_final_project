@@ -490,7 +490,7 @@ namespace tum_ics_ur_robot_lli {
                 ROS_INFO_STREAM("target_X_R calc");
                 
                 m_target_pos0 = m_ur10_model.T_B_0() * m_target_pos;
-                ow::HomogeneousTransformation target_X_R = getTargetHT(m_ef_x, m_target_pos);
+                ow::HomogeneousTransformation target_X_R = getTargetHT(m_ef_x, m_target_pos0);
 
 
                 target_pose_msg.header.stamp = ros::Time::now();
@@ -641,14 +641,23 @@ namespace tum_ics_ur_robot_lli {
             hV1[2] +=vDir1.norm();
             // hV1 /= hV1.norm();
 
-            Vector3d vDir2 = vDir1.cross(hV1);
+            Vector3d vDir2 = hV1.cross(vDir1);
             Vector3d vDir3 = vDir1.cross(vDir2);
 
             ow::HomogeneousTransformation HT;
             vDir1 /= vDir1.norm();
             vDir2 /= vDir2.norm();
             vDir3 /= vDir3.norm();
+
+            // ROS_WARN_STREAM("Dir1: " << vDir1.transpose());
+            // ROS_WARN_STREAM("Dir2: " << vDir2.transpose());
+            // ROS_WARN_STREAM("Dir3: " << vDir3.transpose());
+            
             HT.affine() << vDir1, vDir2, vDir3, fromPosition;
+            // hV1 = inDirectionOfPosition;
+            // hV1[2] = 0;
+            // HT.affine() << Matrix3d::Identity(), inDirectionOfPosition;
+            // ROS_WARN_STREAM("HT: " << HT.matrix());
             return HT;
         }
 
