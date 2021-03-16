@@ -119,9 +119,9 @@ namespace tum_ics_ur_robot_lli {
 
             Vector6d tau(const RobotTime &time,
                          const JointState &current_js,
-                         const Vector6d &vQXrp,
-                         const Vector6d &vQXrpp,
-                         const Vector6d &vQXp,
+                         const Vector6d &t_QXrp,
+                         const Vector6d &t_QXrpp,
+                         const Vector6d &t_QXp,
                          Vector6d &tau_ur10_model_comp);
 
             Vector6d antiWindUp(Vector6d tau);

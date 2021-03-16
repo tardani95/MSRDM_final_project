@@ -242,16 +242,16 @@ namespace tum_ics_ur_robot_lli {
 
             // link_modifier
             ros::param::get(ns + "/link_modifier", m_link_modifier);
-            if (m_link_modifier <= 1.0 && m_link_modifier > 0.5) {
+            if (!(m_link_modifier <= 1.0 && m_link_modifier > 0.5)) {
                 m_link_modifier = 0.7;
-                ROS_ERROR_STREAM("time_move_out_sing_state: is not in the interval [ 0.5 ; 1.0 ], setting to default: " << m_link_modifier);
+                ROS_ERROR_STREAM("link_modifier: is not in the interval [ 0.5 ; 1.0 ], setting to default: " << m_link_modifier);
             }
 
             // radial_influence
             ros::param::get(ns + "/radial_influence", m_radial_influence);
             if (m_radial_influence <= 0.1) {
                 m_radial_influence = 0.1;
-                ROS_ERROR_STREAM("time_move_out_sing_state: is not in the interval [ 0.1 , inf], setting to default: " << m_radial_influence);
+                ROS_ERROR_STREAM("radial_influence: is not in the interval [ 0.1 , inf], setting to default: " << m_radial_influence);
             }            
 
             return true;
