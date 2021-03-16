@@ -423,6 +423,69 @@ namespace tum_ics_ur_robot_lli {
             return Xd_Xdp_Xdpp;
         }
 
+        void SimpleEffortControl::publishPathes(const JointState &current_js, const Vector6d &Qdes, const Vector6d &Xdes, double current_time, double update_hz, int max_path_size){
+            
+            if ( (current_time - m_last_time) > (1 / update_hz) ) {
+                // path publishing
+                geometry_msgs::PoseStamped des_pose;
+                geometry_msgs::PoseStamped ef_pose;
+                ow::HomogeneousTransformation Tef_0_current;
+                ow::HomogeneousTransformation Tef_0_desired;
+
+
+                // ROS_INFO_STREAM("path publishing");
+            
+                des_pose.header.frame_id = "dh_arm_joint_0";
+                des_pose.header.seq = m_path_publish_ctr;
+                des_pose.header.stamp = ros::Time::now();
+
+                ef_pose.header.frame_id = "dh_arm_joint_0";
+                ef_pose.header.seq = m_path_publish_ctr;
+                ef_pose.header.stamp = ros::Time::now();
+                Tef_0_current = m_ur10_model.T_ef_0(current_js.q);
+                ef_pose.pose.position.x = Tef_0_current.pos().x();
+                ef_pose.pose.position.y = Tef_0_current.pos().y();
+                ef_pose.pose.position.z = Tef_0_current.pos().z();
+
+                switch (m_ct_sm.getControlMode()) {
+                    case ControlMode::JS:
+                        Tef_0_desired = m_ur10_model.T_ef_0(Qdes);
+                        des_pose.pose.position.x = Tef_0_desired.pos().x();
+                        des_pose.pose.position.y = Tef_0_desired.pos().y();
+                        des_pose.pose.position.z = Tef_0_desired.pos().z();
+
+                        break;
+                    case ControlMode::CS:
+                        des_pose.pose.position.x = Xdes[0];
+                        des_pose.pose.position.y = Xdes[1];
+                        des_pose.pose.position.z = Xdes[2];
+
+                        break;
+                    default:
+                        ROS_ERROR_STREAM("bad control mode");
+                        break;
+                }
+
+                path_desired_msg.poses.push_back(des_pose);
+                path_desired_msg.header.stamp = ros::Time::now();
+                pubCartPath.publish(path_desired_msg);
+
+                path_ef_msg.poses.push_back(ef_pose);
+                path_ef_msg.header.stamp = ros::Time::now();
+                pubEFPath.publish(path_ef_msg);
+
+                m_path_publish_ctr++;
+
+                if (path_desired_msg.poses.size() > max_path_size) {
+                    // remove the first 10 elements
+                    path_desired_msg.poses.erase(path_desired_msg.poses.begin(), path_desired_msg.poses.begin() + 5);
+                    path_ef_msg.poses.erase(path_ef_msg.poses.begin(), path_ef_msg.poses.begin() + 5);
+                }
+                m_last_time = current_time;
+            }
+        }
+
+
         Vector6d SimpleEffortControl::update(const RobotTime &time,
                                              const JointState &current) {
 
@@ -438,8 +501,26 @@ namespace tum_ics_ur_robot_lli {
             VectorDOFd QXd, QXdp, QXdpp;
 
             // control torque
-            Vector6d tau;
-            tau.setZero();
+            Vector6d tau_control;
+            Vector6d tau_model_comp;
+            tau_control.setZero();
+            tau_model_comp.setZero();
+            
+            Vector6d tau_des;
+            Vector6d tau_obs_avoid;
+            Vector6d tau_grav_comp;
+            tau_des.setZero();
+            tau_obs_avoid.setZero();
+            tau_grav_comp.setZero();
+
+            double radial_influnce = 0.4;
+
+            if ( isObstacleClose(current, radial_influnce) ){
+                // obstacle avoidance
+                for (int obs_i = 0; obs_i < m_num_obstacles; obs_i++){
+                    ROS_WARN_STREAM("Obstacle "<< obs_i << " 's distance to joints [m]: " << m_obs2joint_dis[obs_i].transpose() );
+                }
+            }
 
             // poly spline QXd, QXdp, QXdpp
             VVectorDOFd vQXd;
@@ -608,65 +689,11 @@ namespace tum_ics_ur_robot_lli {
                     ROS_ERROR_STREAM("Unknown ControlTask!");
             }
             
+            // publishing path msgs
+            double update_hz = 20;
+            int max_path_size = 150;
+            publishPathes(current, Qd, Xd, ellapsed_time, update_hz, max_path_size);
 
-            if ( ellapsed_time - m_last_time > 0.05 ) {
-                // path publishing
-                geometry_msgs::PoseStamped des_pose;
-                geometry_msgs::PoseStamped ef_pose;
-                ow::HomogeneousTransformation Tef_0_current;
-                ow::HomogeneousTransformation Tef_0_desired;
-
-
-                ROS_INFO_STREAM("path publishing");
-            
-                des_pose.header.frame_id = "dh_arm_joint_0";
-                des_pose.header.seq = m_path_publish_ctr;
-                des_pose.header.stamp = ros::Time::now();
-
-                ef_pose.header.frame_id = "dh_arm_joint_0";
-                ef_pose.header.seq = m_path_publish_ctr;
-                ef_pose.header.stamp = ros::Time::now();
-                Tef_0_current = m_ur10_model.T_ef_0(current.q);
-                ef_pose.pose.position.x = Tef_0_current.pos().x();
-                ef_pose.pose.position.y = Tef_0_current.pos().y();
-                ef_pose.pose.position.z = Tef_0_current.pos().z();
-
-                switch (m_ct_sm.getControlMode()) {
-                    case ControlMode::JS:
-                        Tef_0_desired = m_ur10_model.T_ef_0(Qd);
-                        des_pose.pose.position.x = Tef_0_desired.pos().x();
-                        des_pose.pose.position.y = Tef_0_desired.pos().y();
-                        des_pose.pose.position.z = Tef_0_desired.pos().z();
-
-                        break;
-                    case ControlMode::CS:
-                        des_pose.pose.position.x = Xd[0];
-                        des_pose.pose.position.y = Xd[1];
-                        des_pose.pose.position.z = Xd[2];
-
-                        break;
-                    default:
-                        ROS_ERROR_STREAM("bad control mode");
-                        break;
-                }
-
-                path_desired_msg.poses.push_back(des_pose);
-                path_desired_msg.header.stamp = ros::Time::now();
-                pubCartPath.publish(path_desired_msg);
-
-                path_ef_msg.poses.push_back(ef_pose);
-                path_ef_msg.header.stamp = ros::Time::now();
-                pubEFPath.publish(path_ef_msg);
-
-                m_path_publish_ctr++;
-
-                if (path_desired_msg.poses.size() > 150) {
-                    // remove the first 10 elements
-                    path_desired_msg.poses.erase(path_desired_msg.poses.begin(), path_desired_msg.poses.begin() + 5);
-                    path_ef_msg.poses.erase(path_ef_msg.poses.begin(), path_ef_msg.poses.begin() + 5);
-                }
-                m_last_time = ellapsed_time;
-            }
 
 
             if (state_changed) {
@@ -755,11 +782,11 @@ namespace tum_ics_ur_robot_lli {
             // js_r.qpp = vQXd[2] - m_Kp * m_DeltaQp - m_Ki * m_sumDeltaQp;
 
             // torque calculation
-            tau = SimpleEffortControl::tau(time, current, QXrp, QXrpp, QXp);
+            tau_control = SimpleEffortControl::tau(time, current, QXrp, QXrpp, QXp);
             // ROS_WARN_STREAM("raw tau = " << tau.transpose());
 
             // anti-windup
-            tau = SimpleEffortControl::antiWindUp(tau);
+            tau_control = SimpleEffortControl::antiWindUp(tau_control);
             // ROS_WARN_STREAM("max tau = " << tau.transpose());
 
 
@@ -783,7 +810,7 @@ namespace tum_ics_ur_robot_lli {
             // pubCtrlData.publish(msg);
 
 
-            return tau;
+            return tau_control;
         }
 
         bool SimpleEffortControl::stop() {

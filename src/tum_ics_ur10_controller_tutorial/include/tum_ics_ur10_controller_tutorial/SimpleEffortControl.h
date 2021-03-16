@@ -120,6 +120,8 @@ namespace tum_ics_ur_robot_lli {
 
             VVector3d sinusoid_traj_gen(const Vector3d amp, const Vector3d w, const Vector3d phase_shift, const Vector3d zero_offset, double time);
 
+            void publishPathes(const JointState &current_js, const Vector6d &Qdes, const Vector6d &Xdes, double current_time, double update_hz, int max_path_size);
+
             Vector6d update(const RobotTime &time, const JointState &current);
 
             bool stop();
