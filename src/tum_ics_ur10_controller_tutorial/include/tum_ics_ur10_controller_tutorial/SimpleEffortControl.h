@@ -53,6 +53,9 @@ namespace tum_ics_ur_robot_lli {
             double m_last_time;
             size_t m_path_publish_ctr;
 
+            double m_update_hz;
+            double m_max_path_size;
+
             Vector3d m_target_pos;
             Vector3d m_target_pos0;
             Vector3d m_ef_traj_xd;
@@ -136,7 +139,7 @@ namespace tum_ics_ur_robot_lli {
 
             VVector3d sinusoid_traj_gen(const Vector3d amp, const Vector3d w, const Vector3d phase_shift, const Vector3d zero_offset, double time);
 
-            void publishPathes(const JointState &current_js, const Vector6d &Qdes, const Vector6d &Xdes, double current_time, double update_hz, int max_path_size);
+            void publishMsgs(const JointState &current_js, const Vector6d &Qdes, const Vector6d &Xdes, double current_time, double update_hz, int max_path_size);
 
             bool isObstacleClose(const JointState &current_js, const double rad_inf);
 

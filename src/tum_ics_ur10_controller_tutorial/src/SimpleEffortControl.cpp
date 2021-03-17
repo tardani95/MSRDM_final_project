@@ -29,8 +29,8 @@ namespace tum_ics_ur_robot_lli {
                   m_ct_sm(ControlTaskStateMachine()),
                   m_ur10_model(ur::UR10Model("ur10_model")) {
 
-            // pubCtrlData = n.advertise<tum_ics_ur_robot_msgs::ControlData>(
-            //         "SimpleEffortCtrlData", 100);
+            pubCtrlData = n.advertise<tum_ics_ur_robot_msgs::ControlData>(
+                    "SimpleEffortCtrlData", 100);
 
             pubTrajMarker = n.advertise<visualization_msgs::MarkerArray>("trajectory_markers", 100);
             pubCartPath = n.advertise<nav_msgs::Path>("path_cs_des_traj", 10);
@@ -266,6 +266,21 @@ namespace tum_ics_ur_robot_lli {
             }
 
 
+            // m_update_hz
+            ros::param::get(ns + "/update_hz", m_update_hz);
+            if (m_update_hz <= 0.0) {
+                m_update_hz = 10;
+                ROS_ERROR_STREAM("update_hz: is smaller than 0, setting to default: " << m_update_hz);
+            }
+
+            // max_path_size
+            ros::param::get(ns + "/max_path_size", m_max_path_size);
+            if (m_max_path_size <= 0.0) {
+                m_max_path_size = 150;
+                ROS_ERROR_STREAM("max_path_size: is smaller than 0, setting to default: " << m_max_path_size);
+            }
+
+
             ROS_WARN_STREAM("Total Time [s]: " << m_totalTime);
             ROS_WARN_STREAM("Time for moving out singularity [s]: " << m_NonSingTime);
 
@@ -282,6 +297,8 @@ namespace tum_ics_ur_robot_lli {
 
             ROS_WARN_STREAM("Link modifier [-]: " << m_link_modifier);
             ROS_WARN_STREAM("Radial influence [-]: " << m_radial_influence);
+            ROS_WARN_STREAM("Publisher update [Hz]: " << m_update_hz);
+            ROS_WARN_STREAM("Max path length [-]: " << m_max_path_size);
 
             return true;
         }
@@ -485,31 +502,49 @@ namespace tum_ics_ur_robot_lli {
             return Xd_Xdp_Xdpp;
         }
 
-        void SimpleEffortControl::publishPathes(const JointState &current_js, const Vector6d &Qdes, const Vector6d &Xdes, double current_time, double update_hz, int max_path_size){
+        void SimpleEffortControl::publishMsgs(const JointState &current_js, const Vector6d &Qdes, const Vector6d &Xdes, double current_time, double update_hz, int max_path_size){
             
             if ( (current_time - m_last_time) > (1 / update_hz) ) {
                 
-                // m_target_pos0 = m_ur10_model.T_B_0() * m_target_pos;
                 ow::HomogeneousTransformation Target_0 = getTargetHT_0(m_ef_x, m_target_pos);
                 ow::HomogeneousTransformation T_3_0 = m_ur10_model.T_j_0(current_js.q,2);
                 ow::HomogeneousTransformation Target_3 = T_3_0.inverse() * Target_0;
 
-
                 target_pose_msg.header.stamp = ros::Time::now();
                 target_pose_msg.header.seq = m_path_publish_ctr;
                 // target_pose_msg.pose = Target_0.toPoseMsg();
-                // target_pose_msg.pose = Target_3.toPoseMsg();
-
-                Matrix3d rot_zxy = Rz(current_js.q[3]+M_PI_2) * Ry(current_js.q[4]) * Rz(current_js.q[5]);
-                ow::HomogeneousTransformation EF_3;
-                EF_3.affine() << rot_zxy, Target_3.pos();
-                
                 target_pose_msg.pose = Target_3.toPoseMsg();
 
+                // Matrix3d rot_zxy = Rz(current_js.q[3]+M_PI_2) * Ry(current_js.q[4]) * Rz(current_js.q[5]);
+                // ow::HomogeneousTransformation EF_3;
+                // EF_3.affine() << rot_zxy, Target_3.pos();                
+                // target_pose_msg.pose = Target_3.toPoseMsg();
 
                 // ROS_INFO_STREAM("Target_0 ZYX: " << Target_0.orien().eulerAngles(2,1,0).transpose());
-                ROS_INFO_STREAM("EF_3 ZXY: " << (Target_3.orien().eulerAngles(2,1,2).transpose()));
+                // ROS_INFO_STREAM("EF_3 ZXY: " << (Target_3.orien().eulerAngles(2,1,2).transpose()));
                 pubTargetPose.publish(target_pose_msg);
+
+
+                // publish the ControlData (only for debugging)
+                // tum_ics_ur_robot_msgs::ControlData msg;
+                // msg.header.stamp = ros::Time::now();
+                // msg.time = current_time;
+                // for (int i = 0; i < STD_DOF; i++) {
+                //     msg.q[i] = current_js.q(i);
+                //     msg.qp[i] = current_js.qp(i);
+                //     msg.qpp[i] = current_js.qpp(i);
+
+                //     // msg.qd[i] = vQXd[0](i);
+                //     msg.qd[i] = Qdes(i);
+                //     // msg.qpd[i] = vQXd[1](i);
+                //     msg.qpd[i] = Xdes(i);
+
+                //     msg.Dq[i] = m_DeltaQ(i);
+                //     msg.Dqp[i] = m_DeltaQp(i);
+
+                //     msg.torques[i] = current_js.tau(i);
+                // }
+                // pubCtrlData.publish(msg);
 
                 // path publishing
                 geometry_msgs::PoseStamped des_pose;
@@ -864,13 +899,6 @@ namespace tum_ics_ur_robot_lli {
                     ROS_ERROR_STREAM("Unknown ControlTask!");
             }
             
-            // publishing path msgs
-            double update_hz = 10;
-            int max_path_size = 150;
-            publishPathes(current, Qd, Xd, ellapsed_time, update_hz, max_path_size);
-
-
-
             if (state_changed) {
                 Qd = current.q;
                 Qdp.setZero();
@@ -1029,25 +1057,10 @@ namespace tum_ics_ur_robot_lli {
             tau_control = SimpleEffortControl::antiWindUp(tau_control);
             // ROS_WARN_STREAM("max tau = " << tau.transpose());
 
-
-            // publish the ControlData (only for debugging)
-            // tum_ics_ur_robot_msgs::ControlData msg;
-            // msg.header.stamp = ros::Time::now();
-            // msg.time = time.tD();
-            // for (int i = 0; i < STD_DOF; i++) {
-            //     msg.q[i] = current.q(i);
-            //     msg.qp[i] = current.qp(i);
-            //     msg.qpp[i] = current.qpp(i);
-
-            //     msg.qd[i] = vQXd[0](i);
-            //     msg.qpd[i] = vQXd[1](i);
-
-            //     msg.Dq[i] = m_DeltaQ(i);
-            //     msg.Dqp[i] = m_DeltaQp(i);
-
-            //     msg.torques[i] = current.tau(i);
-            // }
-            // pubCtrlData.publish(msg);
+            // publishing path msgs
+            // double update_hz = 30;
+            // int max_path_size = 150;
+            publishMsgs(current, Qd, Xd, ellapsed_time, m_update_hz, m_max_path_size);
 
 
             return tau_control;
