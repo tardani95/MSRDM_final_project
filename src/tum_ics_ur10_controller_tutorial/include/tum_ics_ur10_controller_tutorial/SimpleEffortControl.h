@@ -7,6 +7,7 @@
 #include <visualization_msgs/MarkerArray.h>
 #include <object_msgs/Objects.h>
 #include <nav_msgs/Path.h>
+#include <ow_core/math/transform.h>
 
 namespace tum_ics_ur_robot_lli {
     namespace RobotControllers {
@@ -139,7 +140,7 @@ namespace tum_ics_ur_robot_lli {
 
             bool isObstacleClose(const JointState &current_js, const double rad_inf);
 
-            ow::HomogeneousTransformation getTargetHT(const Vector3d &fromPosition, const Vector3d &inDirectionOfPosition);
+            ow::HomogeneousTransformation getTargetHT_0(const Vector3d &fromPosition, const Vector3d &inDirectionOfPosition);
 
             Vector6d update(const RobotTime &time, const JointState &current);
 

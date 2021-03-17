@@ -39,7 +39,7 @@ namespace tum_ics_ur_robot_lli {
 
             path_desired_msg.header.frame_id = "dh_arm_joint_0";
             path_ef_msg.header.frame_id = "dh_arm_joint_0";
-            target_pose_msg.header.frame_id = "dh_arm_joint_0";
+            target_pose_msg.header.frame_id = "dh_arm_joint_3";
             // target_pose_msg.header.frame_id = "dh_arm_joint_3";
 
             m_vObstacles_pos_0.reserve(m_max_num_obstacles);
@@ -490,18 +490,25 @@ namespace tum_ics_ur_robot_lli {
             if ( (current_time - m_last_time) > (1 / update_hz) ) {
                 
                 // m_target_pos0 = m_ur10_model.T_B_0() * m_target_pos;
-                ow::HomogeneousTransformation target_X_R = getTargetHT(m_ef_x, m_target_pos);
+                ow::HomogeneousTransformation Target_0 = getTargetHT_0(m_ef_x, m_target_pos);
+                ow::HomogeneousTransformation T_3_0 = m_ur10_model.T_j_0(current_js.q,2);
+                ow::HomogeneousTransformation Target_3 = T_3_0.inverse() * Target_0;
+
 
                 target_pose_msg.header.stamp = ros::Time::now();
                 target_pose_msg.header.seq = m_path_publish_ctr;
-                target_pose_msg.pose = target_X_R.toPoseMsg();
-                
-                Matrix3d rot_mat = target_X_R.matrix().topLeftCorner(3, 3);
-                Vector3d euler_angles = rot_mat.eulerAngles(2, 1, 0);
-                ROS_INFO_STREAM("target_X_R ZYX: " << target_X_R.orien().eulerAngles(2,1,0).transpose());
-                ROS_INFO_STREAM("target_X_R ZYX eigen: " << euler_angles.transpose());
-                // ROS_INFO_STREAM("target_X_R_pose_msg: " << target_pose_msg.pose);
+                // target_pose_msg.pose = Target_0.toPoseMsg();
+                // target_pose_msg.pose = Target_3.toPoseMsg();
 
+                Matrix3d rot_zxy = Rz(current_js.q[3]+M_PI_2) * Ry(current_js.q[4]) * Rz(current_js.q[5]);
+                ow::HomogeneousTransformation EF_3;
+                EF_3.affine() << rot_zxy, Target_3.pos();
+                
+                target_pose_msg.pose = Target_3.toPoseMsg();
+
+
+                // ROS_INFO_STREAM("Target_0 ZYX: " << Target_0.orien().eulerAngles(2,1,0).transpose());
+                ROS_INFO_STREAM("EF_3 ZXY: " << (Target_3.orien().eulerAngles(2,1,2).transpose()));
                 pubTargetPose.publish(target_pose_msg);
 
                 // path publishing
@@ -635,7 +642,7 @@ namespace tum_ics_ur_robot_lli {
             return is_obs_close;
         }
 
-        ow::HomogeneousTransformation SimpleEffortControl::getTargetHT(const Vector3d &fromPosition, const Vector3d &inDirectionOfPosition){
+        ow::HomogeneousTransformation SimpleEffortControl::getTargetHT_0(const Vector3d &fromPosition, const Vector3d &inDirectionOfPosition){
             Vector3d vDir1 = inDirectionOfPosition - fromPosition;
             // vDir1 /= vDir1.norm();
 
@@ -643,7 +650,8 @@ namespace tum_ics_ur_robot_lli {
             hV1[0] +=vDir1.norm();
             // hV1 /= hV1.norm();
 
-            Vector3d vDir2 = hV1.cross(vDir1);
+            // Vector3d vDir2 = hV1.cross(vDir1);
+            Vector3d vDir2 = vDir1.cross(hV1);
             Vector3d vDir3 = vDir1.cross(vDir2);
 
             ow::HomogeneousTransformation HT;
@@ -655,7 +663,7 @@ namespace tum_ics_ur_robot_lli {
             // ROS_WARN_STREAM("Dir2: " << vDir2.transpose());
             // ROS_WARN_STREAM("Dir3: " << vDir3.transpose());
             
-            HT.affine() << vDir1, vDir2, vDir3, fromPosition;
+            HT.affine() << vDir3, vDir1, vDir2, fromPosition;
             // hV1 = inDirectionOfPosition;
             // hV1[2] = 0;
             // HT.affine() << Matrix3d::Identity(), inDirectionOfPosition;
