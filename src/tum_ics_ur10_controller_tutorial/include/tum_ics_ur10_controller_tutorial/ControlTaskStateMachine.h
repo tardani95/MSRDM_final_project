@@ -78,6 +78,8 @@ namespace tum_ics_ur_robot_lli {
             Matrix6d getKdIM();
 
             Matrix6d getKi();
+            Matrix6d getKi(ControlMode cm);
+
 
             bool isRunning(double current_time);
 

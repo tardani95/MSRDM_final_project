@@ -131,6 +131,22 @@ namespace tum_ics_ur_robot_lli {
             return m_Ki;
         }
 
+        Matrix6d ControlTaskStateMachine::getKi(ControlMode cm){
+            switch (cm)
+            {
+            case ControlMode::JS:
+                return m_JS_Ki;
+            case ControlMode::CS:
+                return m_CS_Ki;
+            case ControlMode::MIXED:
+                return m_MX_Ki;
+            case ControlMode::IMPEDANCE:
+                return m_IM_Ki;
+            default:
+                return m_Ki;
+            }
+        }
+
         bool ControlTaskStateMachine::isRunning(double current_time) {
             return manouverTime(current_time) < t_end;
         }
