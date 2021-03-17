@@ -10,7 +10,6 @@ namespace tum_ics_ur_robot_lli {
         enum ControlMode {
             JS = 0,
             CS,
-            MIXED,
             IMPEDANCE,
         };
 
@@ -18,8 +17,7 @@ namespace tum_ics_ur_robot_lli {
             BREAK = 0,
             MOVE_OUT_SINGULARITY,
             MOVE_TO_CIRCULAR_TRAJECTORY_START,
-            MOVE_IN_CIRCLE_POINT_UPWARDS,
-            OBSTACLE_AVOIDANCE,
+            CIRCULAR_EF_TRAJECTORY_TRACKING,
         };
 
 
@@ -53,10 +51,6 @@ namespace tum_ics_ur_robot_lli {
             Matrix6d m_IM_Kp;
             Matrix6d m_IM_Kd;
             Matrix6d m_IM_Ki;
-
-            Matrix6d m_MX_Kp;
-            Matrix6d m_MX_Kd;
-            Matrix6d m_MX_Ki;
 
             /* -------------- methods ----------- */
         public:
@@ -102,6 +96,10 @@ namespace tum_ics_ur_robot_lli {
             void startGazing();
 
             bool isGazing();
+
+            bool isObstacleAvoidanceOn();
+
+            void setObstacleAvoidance(bool state);
 
         };
     } // namespace RobotControllers

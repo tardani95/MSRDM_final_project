@@ -8,6 +8,7 @@ namespace tum_ics_ur_robot_lli {
                 control_mode(ControlMode::JS),
                 operational_control(false),
                 is_gazing(false),
+                obstacle_avoidance_on(false),
                 reg_pose(Vector6d::Zero()),
                 t_start(0.0),
                 t_end(0.0),
@@ -22,10 +23,7 @@ namespace tum_ics_ur_robot_lli {
                 m_CS_Ki(Matrix6d::Zero()),
                 m_IM_Kp(Matrix6d::Identity()),
                 m_IM_Kd(Matrix6d::Identity()),
-                m_IM_Ki(Matrix6d::Zero()),
-                m_MX_Kp(Matrix6d::Identity()),
-                m_MX_Kd(Matrix6d::Identity()),
-                m_MX_Ki(Matrix6d::Zero()) {
+                m_IM_Ki(Matrix6d::Zero()){
             ROS_INFO_STREAM("Control Task State Machine created");
         }
 
@@ -52,13 +50,6 @@ namespace tum_ics_ur_robot_lli {
                 }
                     break;
 
-                case ControlMode::MIXED: {
-                    m_MX_Kp = Kp;
-                    m_MX_Kd = Kd;
-                    m_MX_Ki = Ki;
-                }
-                    break;
-
                 case ControlMode::IMPEDANCE: {
                     m_IM_Kp = Kp;
                     m_IM_Kd = Kd;
@@ -82,8 +73,6 @@ namespace tum_ics_ur_robot_lli {
                 return m_JS_Kp;
             case ControlMode::CS:
                 return m_CS_Kp;
-            case ControlMode::MIXED:
-                return m_MX_Kp;
             case ControlMode::IMPEDANCE:
                 return m_IM_Kp;
             default:
@@ -111,8 +100,6 @@ namespace tum_ics_ur_robot_lli {
                 return m_JS_Kd;
             case ControlMode::CS:
                 return m_CS_Kd;
-            case ControlMode::MIXED:
-                return m_MX_Kd;
             case ControlMode::IMPEDANCE:
                 return m_IM_Kd;
             default:
@@ -139,8 +126,6 @@ namespace tum_ics_ur_robot_lli {
                 return m_JS_Ki;
             case ControlMode::CS:
                 return m_CS_Ki;
-            case ControlMode::MIXED:
-                return m_MX_Ki;
             case ControlMode::IMPEDANCE:
                 return m_IM_Ki;
             default:
@@ -193,19 +178,10 @@ namespace tum_ics_ur_robot_lli {
                 }
                     break;
 
-                case ControlTask::MOVE_IN_CIRCLE_POINT_UPWARDS: {
+                case ControlTask::CIRCULAR_EF_TRAJECTORY_TRACKING: {
                     ROS_INFO_STREAM("Moving in a circle trajectory and pointing upwards with cartesian space control");
                     control_mode = ControlMode::CS;
                     operational_control = true;
-                }
-                    break;
-
-                case ControlTask::OBSTACLE_AVOIDANCE: {
-                    ROS_INFO_STREAM("Obstacle avoidance!");
-                    // TODO OR MIXED?
-                    control_mode = ControlMode::IMPEDANCE;
-                    operational_control = true;
-
                 }
                     break;
 
@@ -235,13 +211,6 @@ namespace tum_ics_ur_robot_lli {
                 }
                     break;
 
-                case ControlMode::MIXED: {
-                    m_Kp = m_MX_Kp;
-                    m_Kd = m_MX_Kd;
-                    m_Ki = m_MX_Ki;
-                }
-                    break;
-
                 case ControlMode::IMPEDANCE: {
                     m_Kp = m_IM_Kp;
                     m_Kd = m_IM_Kd;
@@ -268,6 +237,14 @@ namespace tum_ics_ur_robot_lli {
 
         bool ControlTaskStateMachine::isGazing(){
             return is_gazing;
+        }
+
+        bool ControlTaskStateMachine::isObstacleAvoidanceOn(){
+            return obstacle_avoidance_on;
+        }
+
+        void ControlTaskStateMachine::setObstacleAvoidance(bool state){
+            obstacle_avoidance_on = state;
         }
 
     }  // namespace RobotControllers

@@ -906,7 +906,7 @@ namespace tum_ics_ur_robot_lli {
                 m_prev_js = current;
             }
 
-            // State Machine
+            /* ============= trajectory generation ============== */
             bool state_changed = false;
 
             switch (m_ct_sm.getCurrentTask()) {
@@ -996,7 +996,7 @@ namespace tum_ics_ur_robot_lli {
                     if (!m_ct_sm.isRunning(ellapsed_time)) {
                         // TODO adjust time
                         double task_time = m_totalTime;
-                        m_ct_sm.changeTask(ControlTask::MOVE_IN_CIRCLE_POINT_UPWARDS, task_time, ellapsed_time);
+                        m_ct_sm.changeTask(ControlTask::CIRCULAR_EF_TRAJECTORY_TRACKING, task_time, ellapsed_time);
                         state_changed = true;
 
                         m_xStart = tf2pose(m_ur10_model.T_ef_0(current.q));
@@ -1006,7 +1006,7 @@ namespace tum_ics_ur_robot_lli {
                 }
                     break;
 
-                case ControlTask::MOVE_IN_CIRCLE_POINT_UPWARDS: {
+                case ControlTask::CIRCULAR_EF_TRAJECTORY_TRACKING: {
 
                     VVector3d Xpd_Xpdp_Xpdpp = sinusoid_traj_gen(m_circ_traj_radius,m_circ_traj_frequency, m_circ_traj_phase_shift, m_circ_traj_center, m_ct_sm.manouverTime(ellapsed_time));
 
