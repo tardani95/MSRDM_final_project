@@ -31,6 +31,7 @@ namespace tum_ics_ur_robot_lli {
 
             bool operational_control;
             bool is_gazing;
+            bool obstacle_avoidance_on;
 
             Vector6d reg_pose;
 

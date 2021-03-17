@@ -774,6 +774,19 @@ namespace tum_ics_ur_robot_lli {
             eulerP[2] = -q456p[1];
         }
 
+        void euler_p_ppZYXatT3_2_joint(const Vector3d &eulerP, const Vector3d &eulerPP, Vector3d &Qrp, Vector3d &Qrpp){
+            // Qrp[0] = euler[0] - M_PI_2;
+            Qrp[0] = eulerP[0];
+            // Qrp[1] = -euler[2] + M_PI_2;
+            Qrp[1] = -eulerP[2];
+            // Qrp[2] = euler[1];
+            Qrp[2] = eulerP[1];
+
+            Qrpp[0] = eulerPP[0];
+            Qrpp[1] = -eulerPP[2];
+            Qrpp[2] = eulerPP[1];
+        }
+
         Vector3d T2eulerZYX(ow::HomogeneousTransformation target){
             tf::Matrix3x3 m(target.orien().toQuaternionTF());
             double roll, pitch, yaw;
@@ -832,14 +845,17 @@ namespace tum_ics_ur_robot_lli {
             ROS_WARN_STREAM("gaze Qrp: " << gazeQrp.transpose());
             ROS_WARN_STREAM("gaze Qrpp: " << gazeQrpp.transpose());
 
-            commonQXrp.tail(3) = gazeQrp;
-            commonQXrpp.tail(3) = gazeQrpp;
+            // convert back euler space reference to joint space
+            Vector3d QXrp, QXrpp;
+            euler_p_ppZYXatT3_2_joint(gazeQrp, gazeQrpp, QXrp, QXrpp);
+            commonQXrp.tail(3) = QXrp;
+            commonQXrpp.tail(3) = QXrpp;
 
             // controller 
             Vector3d gazeSq;
             gazeSq = QeulerP - gazeQrp;
 
-            // !!!missing robot model compensation!!! 
+            // !!!missing robot model compensation!!! --> have to be added later on
             Vector3d gazeTau = -m_ct_sm.getKd(ControlMode::JS).bottomRightCorner(3,3) * gazeSq;
 
 
@@ -863,9 +879,10 @@ namespace tum_ics_ur_robot_lli {
             VectorDOFd QXd, QXdp, QXdpp;
 
             // control torque
-            Vector6d tau = Vector6d::Zero();
+            Vector6d tau;
             Vector6d tau_control;
             Vector6d tau_model_comp;
+            tau.setZero();
             tau_control.setZero();
             tau_model_comp.setZero();
 
