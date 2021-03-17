@@ -61,6 +61,8 @@ namespace tum_ics_ur_robot_lli {
             Vector3d m_ef_traj_xd;
             Vector3d m_ef_x;
 
+            Vector3d m_euler_old;
+
             static const int m_max_num_obstacles = 4;
             int m_num_obstacles;
             double m_link_modifier;

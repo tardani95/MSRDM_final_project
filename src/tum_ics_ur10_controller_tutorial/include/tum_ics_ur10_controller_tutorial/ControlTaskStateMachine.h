@@ -30,6 +30,7 @@ namespace tum_ics_ur_robot_lli {
             ControlMode control_mode;
 
             bool operational_control;
+            bool is_gazing;
 
             Vector6d reg_pose;
 
@@ -97,6 +98,9 @@ namespace tum_ics_ur_robot_lli {
 
             void setControlMode(ControlMode new_control_mode);
 
+            void startGazing();
+
+            bool isGazing();
 
         };
     } // namespace RobotControllers
