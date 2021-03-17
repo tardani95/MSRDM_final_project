@@ -7,6 +7,7 @@ namespace tum_ics_ur_robot_lli {
                 task(ControlTask::MOVE_OUT_SINGULARITY),
                 control_mode(ControlMode::JS),
                 operational_control(false),
+                is_gazing(false),
                 reg_pose(Vector6d::Zero()),
                 t_start(0.0),
                 t_end(0.0),
@@ -259,6 +260,14 @@ namespace tum_ics_ur_robot_lli {
 
         void ControlTaskStateMachine::setControlMode(ControlMode new_control_mode) {
             control_mode = new_control_mode;
+        }
+
+        void ControlTaskStateMachine::startGazing(){
+            is_gazing = true;
+        }
+
+        bool ControlTaskStateMachine::isGazing(){
+            return is_gazing;
         }
 
     }  // namespace RobotControllers
