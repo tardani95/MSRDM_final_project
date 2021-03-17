@@ -713,10 +713,48 @@ namespace tum_ics_ur_robot_lli {
         }
 
         Vector3d SimpleEffortControl::tauGazing(const JointState &current_js, const JointState &prev_js, Vector6d &commonQXrp, Vector6d &commonQXrpp){
-            Vector3d EF_X_0 = m_ur10_model.T_ef_0(current_js.q).pos();
-            Vector3d Qd = getTargetHT_3(current_js, EF_X_0, m_target_pos).orien().eulerAngles(2,1,2);
-            Vector3d Qdp = getTargetHT_3(current_js, EF_X_0, m_target_pos).orien().eulerAngles(2,1,2);
 
+            /* ============= GAZING ============= */
+            Vector3d EF_Xd_tm1_0 = m_ur10_model.T_ef_0(prev_js.q).pos();
+            Vector3d EF_Xd_t_0 = m_ur10_model.T_ef_0(current_js.q).pos();
+
+            Vector3d Qd_tm1 = getTargetHT_3(prev_js, EF_Xd_tm1_0, m_target_pos_tm1).orien().eulerAngles(2,1,2);
+            Vector3d Qd_t =   getTargetHT_3(current_js, EF_Xd_t_0, m_target_pos_t).orien().eulerAngles(2,1,2);
+            m_target_pos_tm1 = m_target_pos_t;
+            
+            Vector3d Qd = Qd_t;
+            // simple numeric differentiation
+            Vector3d Qdp = (Qd_t - Qd_tm1) / m_controlPeriod;
+            Vector3d Qdpp = Vector3d::Zero();
+
+
+            // erros
+            m_DeltaQ.tail(3) = current_js.q.tail(3) - Qd;
+            m_DeltaQp.tail(3) = current_js.qp.tail(3) - Qdp;
+
+            Vector3d sumDeltaQ_inc = m_anti_windup.tail(3).array() * (m_DeltaQ.tail(3) * m_controlPeriod).array();
+            Vector3d sumDeltaQp_inc = m_anti_windup.tail(3).array() * (m_DeltaQp.tail(3) * m_controlPeriod).array();
+
+            m_sumDeltaQ.tail(3) += sumDeltaQ_inc;
+            m_sumDeltaQp.tail(3) += sumDeltaQp_inc;
+
+            // reference
+            Vector3d gazeQrp, gazeQrpp; // reference qr or xr
+            gazeQrp = Qdp - m_ct_sm.getKp(ControlMode::JS).bottomRightCorner(3,3) * m_DeltaQ.tail(3) - m_ct_sm.getKi(ControlMode::JS).bottomRightCorner(3,3) * m_sumDeltaQ.tail(3);
+            gazeQrpp = Qdpp - m_ct_sm.getKp(ControlMode::JS).bottomRightCorner(3,3) * m_DeltaQp.tail(3) - m_ct_sm.getKi(ControlMode::JS).bottomRightCorner(3,3) * m_sumDeltaQp.tail(3);
+
+            commonQXrp.tail(3) = gazeQrp;
+            commonQXrpp.tail(3) = gazeQrpp;
+
+            // controller 
+            Vector3d gazeSq;
+            gazeSq = current_js.qp.tail(3) - gazeQrp;
+
+            // !!!missing robot model compensation!!! 
+            Vector3d gazeTau = -m_ct_sm.getKd(ControlMode::JS).bottomRightCorner(3,3) * gazeSq;
+
+
+            return gazeTau;
         }
 
         Vector6d SimpleEffortControl::update(const RobotTime &time,
