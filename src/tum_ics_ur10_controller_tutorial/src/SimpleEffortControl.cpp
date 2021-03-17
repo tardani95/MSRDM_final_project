@@ -380,86 +380,6 @@ namespace tum_ics_ur_robot_lli {
             return pose;
         }
 
-        Vector6d SimpleEffortControl::tau(const RobotTime &time,
-                                          const JointState &current_js,
-                                          const Vector6d &t_QXrp,
-                                          const Vector6d &t_QXrpp,
-                                          const Vector6d &t_QXp,
-                                          Vector6d &tau_ur10_model_comp) {
-            // control torque
-            Vector6d tau;
-            tau.setZero();
-
-
-            // robot model
-            Vector6d QXrp, QXrpp, QXp, Q, Qp;
-
-            QXrp = t_QXrp;
-            QXrpp = t_QXrpp;
-
-            QXp = t_QXp;
-
-            Q = current_js.q;
-            Qp = current_js.qp;
-
-            ur::UR10Model::Regressor Yr;
-
-            Vector6d Sq, Sqx;
-
-            // controller 
-            Sqx = QXp - QXrp;
-
-            Vector6d Qrp, Qrpp;
-            Eigen::Matrix<double, 6, 6> J_ef_0;
-            PartialPivLU<Tum::Matrix6d> J_ef_0_lu;
-
-            switch (m_ct_sm.getControlMode()) {
-                case ControlMode::JS: /* joint space */
-                    Sq = Sqx;
-                    Qrp = QXrp;
-                    Qrpp = QXrpp;
-                    Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
-                    break;
-
-                case ControlMode::CS: /* cartesian space */
-                    J_ef_0 = m_ur10_model.J_ef_0(current_js.q);
-                    // Eigen::Matrix<double,3,6> J_ef_0_v = J_ef_0.topRows(3);
-                    // ROS_WARN_STREAM("Jef_0=\n" << J_ef_0);
-                    J_ef_0_lu = J_ef_0.lu();
-
-                    Sq = J_ef_0_lu.solve(Sqx);
-                    Qrp = J_ef_0_lu.solve(QXrp);
-                    Qrpp = J_ef_0_lu.solve(QXrpp);
-                    // ROS_WARN_STREAM("Sq=\n" << Sq.transpose());
-                    // ROS_WARN_STREAM("Qrp=\n" << Qrp.transpose());
-                    // ROS_WARN_STREAM("Qrpp=\n" << Qrpp.transpose());
-
-                    Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
-                    break;
-
-                default:
-                    ROS_WARN_STREAM("Using DEFAULT control mode: Joint Space");
-                    Sq = Sqx;
-                    Qrp = QXrp;
-                    Qrpp = QXrpp;
-                    Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
-            }
-
-            // ROS_WARN_STREAM("Sq =\n" << Sq);
-            // calculate torque
-            tau_ur10_model_comp = Yr * m_theta;
-
-            tau = -m_ct_sm.getKd() * Sq + tau_ur10_model_comp;
-
-            // parameter update
-            MatrixXd gamma = MatrixXd::Identity(81, 81);
-            gamma *= 0.0002;
-            // parameter vector update
-            m_theta -= gamma * Yr.transpose() * Sq;
-
-            return tau;
-        }
-
         Vector6d SimpleEffortControl::antiWindUp(Vector6d tau) {
             std::stringstream ss;
             bool b_anti_windup = false;
@@ -677,8 +597,8 @@ namespace tum_ics_ur_robot_lli {
             return is_obs_close;
         }
 
-        ow::HomogeneousTransformation SimpleEffortControl::getTargetHT_0(const Vector3d &fromPosition, const Vector3d &inDirectionOfPosition){
-            Vector3d vDir1 = inDirectionOfPosition - fromPosition;
+        ow::HomogeneousTransformation SimpleEffortControl::getTargetHT_0(const Vector3d &fromPosition_0, const Vector3d &inDirectionOfPosition_0){
+            Vector3d vDir1 = inDirectionOfPosition_0 - fromPosition_0;
             // vDir1 /= vDir1.norm();
 
             Vector3d hV1 = vDir1;
@@ -698,12 +618,105 @@ namespace tum_ics_ur_robot_lli {
             // ROS_WARN_STREAM("Dir2: " << vDir2.transpose());
             // ROS_WARN_STREAM("Dir3: " << vDir3.transpose());
             
-            HT.affine() << vDir3, vDir1, vDir2, fromPosition;
-            // hV1 = inDirectionOfPosition;
+            HT.affine() << vDir3, vDir1, vDir2, fromPosition_0;
+            // hV1 = inDirectionOfPosition_0;
             // hV1[2] = 0;
-            // HT.affine() << Matrix3d::Identity(), inDirectionOfPosition;
+            // HT.affine() << Matrix3d::Identity(), inDirectionOfPosition_0;
             // ROS_WARN_STREAM("HT: " << HT.matrix());
             return HT;
+        }
+
+        ow::HomogeneousTransformation SimpleEffortControl::getTargetHT_3(const JointState &current_js, const Vector3d &fromPosition_0, const Vector3d &inDirectionOfPosition_0){
+            ow::HomogeneousTransformation T_3_0 = m_ur10_model.T_j_0(current_js.q,2);
+            ow::HomogeneousTransformation Target_3 = T_3_0.inverse() * getTargetHT_0(fromPosition_0, inDirectionOfPosition_0);
+            return Target_3;
+        }
+
+        Vector6d SimpleEffortControl::tau(const RobotTime &time,
+                                          const JointState &current_js,
+                                          const Vector6d &t_QXrp,
+                                          const Vector6d &t_QXrpp,
+                                          const Vector6d &t_QXp,
+                                          Vector6d &tau_ur10_model_comp) {
+            // control torque
+            Vector6d tau;
+            tau.setZero();
+
+
+            // robot model
+            Vector6d QXrp, QXrpp, QXp, Q, Qp;
+
+            QXrp = t_QXrp;
+            QXrpp = t_QXrpp;
+
+            QXp = t_QXp;
+
+            Q = current_js.q;
+            Qp = current_js.qp;
+
+            ur::UR10Model::Regressor Yr;
+
+            Vector6d Sq, Sqx;
+
+            // controller 
+            Sqx = QXp - QXrp;
+
+            Vector6d Qrp, Qrpp;
+            Eigen::Matrix<double, 6, 6> J_ef_0;
+            PartialPivLU<Tum::Matrix6d> J_ef_0_lu;
+
+            switch (m_ct_sm.getControlMode()) {
+                case ControlMode::JS: /* joint space */
+                    Sq = Sqx;
+                    Qrp = QXrp;
+                    Qrpp = QXrpp;
+                    Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
+                    break;
+
+                case ControlMode::CS: /* cartesian space */
+                    J_ef_0 = m_ur10_model.J_ef_0(current_js.q);
+                    // Eigen::Matrix<double,3,6> J_ef_0_v = J_ef_0.topRows(3);
+                    // ROS_WARN_STREAM("Jef_0=\n" << J_ef_0);
+                    J_ef_0_lu = J_ef_0.lu();
+
+                    Sq = J_ef_0_lu.solve(Sqx);
+                    Qrp = J_ef_0_lu.solve(QXrp);
+                    Qrpp = J_ef_0_lu.solve(QXrpp);
+                    // ROS_WARN_STREAM("Sq=\n" << Sq.transpose());
+                    // ROS_WARN_STREAM("Qrp=\n" << Qrp.transpose());
+                    // ROS_WARN_STREAM("Qrpp=\n" << Qrpp.transpose());
+
+                    Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
+                    break;
+
+                default:
+                    ROS_WARN_STREAM("Using DEFAULT control mode: Joint Space");
+                    Sq = Sqx;
+                    Qrp = QXrp;
+                    Qrpp = QXrpp;
+                    Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
+            }
+
+            // ROS_WARN_STREAM("Sq =\n" << Sq);
+            // calculate torque
+            tau_ur10_model_comp = Yr * m_theta;
+
+            tau = -m_ct_sm.getKd() * Sq + tau_ur10_model_comp;
+
+            // parameter update
+            MatrixXd gamma = MatrixXd::Identity(81, 81);
+            gamma *= 0.0002;
+            // parameter vector update
+            m_theta -= gamma * Yr.transpose() * Sq;
+
+            return tau;
+        }
+
+        Vector3d SimpleEffortControl::tauGazing(const JointState &current_js){
+            Vector3d EF_X_0 = m_ur10_model.T_ef_0(current_js.q).pos();
+            Vector3d Qd = getTargetHT_3(current_js, EF_X_0, m_target_pos).orien().eulerAngles(2,1,2);
+            Vector3d Qdp = getTargetHT_3(current_js, EF_X_0, m_target_pos).orien().eulerAngles(2,1,2);
+
         }
 
         Vector6d SimpleEffortControl::update(const RobotTime &time,

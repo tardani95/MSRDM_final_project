@@ -144,6 +144,9 @@ namespace tum_ics_ur_robot_lli {
             bool isObstacleClose(const JointState &current_js, const double rad_inf);
 
             ow::HomogeneousTransformation getTargetHT_0(const Vector3d &fromPosition, const Vector3d &inDirectionOfPosition);
+            ow::HomogeneousTransformation getTargetHT_3(const JointState &current_js, const Vector3d &fromPosition, const Vector3d &inDirectionOfPosition);
+
+            Vector3d tauGazing(const JointState &current_js);
 
             Vector6d update(const RobotTime &time, const JointState &current);
 
