@@ -102,11 +102,11 @@ namespace tum_ics_ur_robot_lli {
         void SimpleEffortControl::targetPositionUpdateCallback(const object_msgs::Objects msg) {
             // ROS_WARN_STREAM("Objects: \n" << msg);
             geometry_msgs::Point target_x = msg.objects[0].position.position;
-            m_target_pos[0] = target_x.x;
-            m_target_pos[1] = target_x.y;
-            m_target_pos[2] = target_x.z;
-            m_target_pos = m_ur10_model.T_B_0() * m_target_pos;
-            // ROS_WARN_STREAM("Target position [m]: " << m_target_pos.transpose());
+            m_target_pos_t[0] = target_x.x;
+            m_target_pos_t[1] = target_x.y;
+            m_target_pos_t[2] = target_x.z;
+            m_target_pos_t = m_ur10_model.T_B_0() * m_target_pos_t;
+            // ROS_WARN_STREAM("Target position [m]: " << m_target_pos_t.transpose());
         }
 
         bool SimpleEffortControl::loadControllerGains(std::string t_ns, Matrix6d &p_Kd, Matrix6d &p_Kp, Matrix6d &p_Ki) {
@@ -426,7 +426,7 @@ namespace tum_ics_ur_robot_lli {
             
             if ( (current_time - m_last_time) > (1 / update_hz) ) {
                 
-                ow::HomogeneousTransformation Target_0 = getTargetHT_0(m_ef_x, m_target_pos);
+                ow::HomogeneousTransformation Target_0 = getTargetHT_0(m_ef_x, m_target_pos_t);
                 ow::HomogeneousTransformation T_3_0 = m_ur10_model.T_j_0(current_js.q,2);
                 ow::HomogeneousTransformation Target_3 = T_3_0.inverse() * Target_0;
 
@@ -712,7 +712,7 @@ namespace tum_ics_ur_robot_lli {
             return tau;
         }
 
-        Vector3d SimpleEffortControl::tauGazing(const JointState &current_js){
+        Vector3d SimpleEffortControl::tauGazing(const JointState &current_js, const JointState &prev_js, Vector6d &commonQXrp, Vector6d &commonQXrpp){
             Vector3d EF_X_0 = m_ur10_model.T_ef_0(current_js.q).pos();
             Vector3d Qd = getTargetHT_3(current_js, EF_X_0, m_target_pos).orien().eulerAngles(2,1,2);
             Vector3d Qdp = getTargetHT_3(current_js, EF_X_0, m_target_pos).orien().eulerAngles(2,1,2);
@@ -756,6 +756,9 @@ namespace tum_ics_ur_robot_lli {
 
                 m_qStart = current.q;
                 ROS_WARN_STREAM("START [DEG]: \n" << m_qStart.transpose());
+
+                m_target_pos_tm1 = m_target_pos_t;
+                m_prev_js = current;
             }
 
             // State Machine

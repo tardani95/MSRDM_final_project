@@ -56,8 +56,8 @@ namespace tum_ics_ur_robot_lli {
             double m_update_hz;
             double m_max_path_size;
 
-            Vector3d m_target_pos;
-            Vector3d m_target_pos0;
+            Vector3d m_target_pos_t;
+            Vector3d m_target_pos_tm1;
             Vector3d m_ef_traj_xd;
             Vector3d m_ef_x;
 
@@ -97,6 +97,7 @@ namespace tum_ics_ur_robot_lli {
             Vector6d m_sumDeltaQp;
 
             ControlTaskStateMachine m_ct_sm;
+            JointState m_prev_js;
 
             const Vector6d c_max_control_effort;
             double m_controlPeriod; //[s]
@@ -146,7 +147,8 @@ namespace tum_ics_ur_robot_lli {
             ow::HomogeneousTransformation getTargetHT_0(const Vector3d &fromPosition, const Vector3d &inDirectionOfPosition);
             ow::HomogeneousTransformation getTargetHT_3(const JointState &current_js, const Vector3d &fromPosition, const Vector3d &inDirectionOfPosition);
 
-            Vector3d tauGazing(const JointState &current_js);
+            Vector3d tauGazing(const JointState &current_js, const JointState &prev_js,
+                             Vector6d &commonQXrp, Vector6d &commonQXrpp);
 
             Vector6d update(const RobotTime &time, const JointState &current);
 
