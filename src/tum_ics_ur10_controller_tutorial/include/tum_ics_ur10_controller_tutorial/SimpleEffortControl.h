@@ -100,6 +100,9 @@ namespace tum_ics_ur_robot_lli {
             Vector6d m_sumDeltaQ;
             Vector6d m_sumDeltaQp;
 
+            Vector3d m_gazingSumDeltaQ;
+            Vector3d m_gazingSumDeltaQp;
+
             ControlTaskStateMachine m_ct_sm;
             JointState m_prev_js;
 
@@ -161,7 +164,8 @@ namespace tum_ics_ur_robot_lli {
             ow::HomogeneousTransformation getTargetHT_3(const JointState &current_js, const Vector3d &fromPosition, const Vector3d &inDirectionOfPosition);
 
             Vector3d tauGazing(const JointState &current_js, const JointState &prev_js,
-                             Vector6d &commonQXrp, Vector6d &commonQXrpp);
+                             Vector6d &commonQXrp, Vector6d &commonQXrpp,
+                             Vector6d &commonSq);
 
             Vector6d update(const RobotTime &time, const JointState &current);
 
