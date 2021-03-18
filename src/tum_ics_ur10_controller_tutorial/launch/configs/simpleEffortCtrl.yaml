@@ -19,19 +19,20 @@ cartesian_space_ctrl:
   # [x y z,                         gazing blue-yaw-q4, green-pitch-q5, red-roll-q6]
   #derivative
   # gains_d: [ 50, 50, 75,  5, 5, 5 ]
-  gains_d: [ 100, 100, 100,                  30, 15, 5 ]
+  # gains_d: [ 100, 100, 100,                  30, 15, 5 ]
+  gains_d: [ 100, 100, 100,                  60, 20, 20 ]
   # gains_d: [ 200, 75, 75, 73, 15, 5 ]
 
   #proportional
   # gains_p: [ 5, 5, 5,   0, 0, 0 ]
   # gains_p: [ 10, 10, 15,   5, 5, 5 ]
   # gains_p: [ 10, 10, 30,                  5, 5, 1.0 ]
-  gains_p: [ 15, 15, 15,                      3, 3, 3 ]
+  gains_p: [ 15, 15, 15,                      10, 10, 10 ]
 
   #integral
   # gains_i: [ 2, 2, 3, 1, 1, 1 ]
   # gains_i: [ 2, 2, 8,                       0, 0, 0 ]
-  gains_i: [ 2, 2, 2,                       0.5, 0.5, 0.5 ]
+  gains_i: [ 2, 2, 2,                         1, 1, 1 ]
   # gains_i: [ 1, 1, 1, 1, 1, 1]
   # gains_i: [ 5, 5, 5, 5, 5, 5]
 
@@ -63,14 +64,14 @@ other_parameter_settings:
   non_singular_state: [ 0, -90, -90, -90, 90,  0 ]
   # non_singular_state: [ 180, -90, 90, -90, -90,  0 ]
 
-  time_move_out_sing_state: 15.0
+  time_move_out_sing_state: 6.0
 
   # in frame 0 coordinate system
   circle_traj:
     center: [ 0.65, 0.25, 0.5 ] # [m]
     radius: [ 0.25, 0.3, 0.2 ] # [m]
-    frequency: [ 0.1, 0.1, 0.1 ] # [rad/s]
-    # frequency: [ 0.4, 0.4, 0.1 ] # [rad/s]
+    # frequency: [ 0.1, 0.1, 0.1 ] # [rad/s]
+    frequency: [ 0.4, 0.4, 0.1 ] # [rad/s]
     phase: [ 0.0, 90.0, 0.0 ] # [DEG]
 
   # collision avoidance

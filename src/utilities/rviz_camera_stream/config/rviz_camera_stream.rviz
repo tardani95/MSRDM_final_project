@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /TF1
         - /TF1/Frames1
+        - /TargetPose1
         - /MarkerArray2/Namespaces1
         - /CurrentGazingPose1
         - /DesiredGazingPose1
@@ -160,9 +161,9 @@ Visualization Manager:
         Path: true
         Path - des_traj: true
         Path - ef_traj: true
-        Pose: true
         RobotModel: true
         TF: true
+        TargetPose: true
         Value: true
     - Class: rviz/Image
       Enabled: true
@@ -277,7 +278,7 @@ Visualization Manager:
       Enabled: true
       Head Length: 0.30000001192092896
       Head Radius: 0.10000000149011612
-      Name: Pose
+      Name: TargetPose
       Shaft Length: 1
       Shaft Radius: 0.05000000074505806
       Shape: Axes
@@ -321,7 +322,7 @@ Visualization Manager:
       Marker Topic: /trajectory_markers
       Name: MarkerArray
       Namespaces:
-        {}
+        lines: true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -406,7 +407,7 @@ Visualization Manager:
       Axes Radius: 0.009999999776482582
       Class: rviz/Pose
       Color: 255; 25; 0
-      Enabled: true
+      Enabled: false
       Head Length: 0.30000001192092896
       Head Radius: 0.10000000149011612
       Name: DesiredGazingPose
@@ -415,7 +416,7 @@ Visualization Manager:
       Shape: Axes
       Topic: /gazing_des_pose
       Unreliable: false
-      Value: true
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 90
@@ -444,25 +445,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 3.8275208473205566
+      Distance: 1.171459436416626
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.46675845980644226
-        Y: -0.10320890694856644
-        Z: 0.3393379747867584
+        X: -0.615513026714325
+        Y: -0.08007708936929703
+        Z: 0.3812074363231659
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.544797956943512
+      Pitch: 0.5147978663444519
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.742253303527832
+      Yaw: 4.214084148406982
     Saved: ~
 Window Geometry:
   Displays:
