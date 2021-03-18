@@ -17,25 +17,28 @@ joint_space_ctrl:
 cartesian_space_ctrl:
   # [x y z, rx, ry, rz]
   #derivative
-  gains_d: [ 50, 50, 50,   0, 0, 0 ]
+  # gains_d: [ 50, 50, 75,  5, 5, 5 ]
+  gains_d: [ 50, 50, 30,  5, 5, 5 ]
   # gains_d: [ 200, 75, 75, 73, 15, 5 ]
 
   #proportional
   # gains_p: [ 5, 5, 5,   0, 0, 0 ]
-  gains_p: [ 10, 10, 10,   0, 0, 0 ]
+  # gains_p: [ 10, 10, 15,   5, 5, 5 ]
+  gains_p: [ 10, 10, 20,   5, 5, 5 ]
 
   #integral
-  gains_i: [ 2, 2, 2, 0, 0, 0 ]
+  # gains_i: [ 2, 2, 3, 1, 1, 1 ]
+  gains_i: [ 2, 2, 5, 1, 1, 1 ]
   # gains_i: [ 1, 1, 1, 1, 1, 1]
   # gains_i: [ 5, 5, 5, 5, 5, 5]
 
 impedance_ctrl:
   # [x y z, rx, ry, rz]
   #derivative - damping
-  gains_d: [ 2, 2, 2,   0, 0, 0 ]
+  gains_d: [ 150, 150, 150,   0, 0, 0 ]
 
   #proportional - stifness
-  gains_p: [ 5, 5, 5,   0, 0, 0 ]
+  gains_p: [ 500, 500, 500,   0, 0, 0 ]
 
   #integral - only because unified parameter loading
   gains_i: [ 0, 0, 0, 0, 0, 0 ]
@@ -53,18 +56,19 @@ other_parameter_settings:
   non_singular_state: [ 0, -90, -90, -90, 90,  0 ]
   # non_singular_state: [ 180, -90, 90, -90, -90,  0 ]
 
-  time_move_out_sing_state: 5.0
+  time_move_out_sing_state: 3.0
 
   # in frame 0 coordinate system
   circle_traj:
-    center: [ 0.5, 0.0, 0.4 ] # [m]
+    center: [ 0.6, 0.2, 0.6 ] # [m]
     radius: [ 0.25, 0.25, 0.0 ] # [m]
     frequency: [ 0.5, 0.5, 0.0 ] # [rad/s]
     phase: [ 0.0, 90.0, 0.0 ] # [DEG]
 
   # collision avoidance
-  link_modifier: 0.7
-  radial_influence: 0.5
+  link_modifier: 0.66
+  radial_influence: 0.4
+  repulsive_force_gain: [ 2, 5, 5, 3, 3, 3]
 
   # publish settings
   update_hz: 30
