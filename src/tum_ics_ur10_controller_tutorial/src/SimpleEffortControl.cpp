@@ -59,6 +59,7 @@ namespace tum_ics_ur_robot_lli {
             }
 
             m_theta = m_ur10_model.parameterInitalGuess();
+            m_gamma = 0.0002 * MatrixXd::Identity(81, 81);
 
             m_controlPeriod = 0.002;
 
@@ -674,6 +675,21 @@ namespace tum_ics_ur_robot_lli {
             ow::HomogeneousTransformation T_3_0 = m_ur10_model.T_j_0(current_js.q,2);
             ow::HomogeneousTransformation Target_3 = T_3_0.inverse() * getTargetHT_0(fromPosition_0, inDirectionOfPosition_0);
             return Target_3;
+        }
+
+        Vector6d SimpleEffortControl::tauUR10Compensation(const Vector6d &Sq,
+                                                    const Vector6d &Q, 
+                                                    const Vector6d &Qp,
+                                                    const Vector6d &Qrp, 
+                                                    const Vector6d &Qrpp){
+
+            ur::UR10Model::Regressor Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
+
+            // calculate torque
+            Vector6d tau_ur10_model_comp = Yr * m_theta;
+
+            // parameter update
+            m_theta -= m_gamma * Yr.transpose() * Sq;
         }
 
         Vector6d SimpleEffortControl::tau(const RobotTime &time,

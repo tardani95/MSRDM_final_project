@@ -128,6 +128,11 @@ namespace tum_ics_ur_robot_lli {
 
             bool start();
 
+            Vector6d tauUR10Compensation(const Vector6d &Sq,
+                                                        const Vector6d &Q, 
+                                                        const Vector6d &Qp, 
+                                                        const Vector6d &Qrp, 
+                                                        const Vector6d &Qrpp);
 
             Vector6d tau(const RobotTime &time,
                          const JointState &current_js,
