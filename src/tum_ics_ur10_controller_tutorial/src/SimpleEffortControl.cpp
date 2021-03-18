@@ -802,11 +802,17 @@ namespace tum_ics_ur_robot_lli {
             
             bool is_close_to_ef_traj = true;
             for(int idx = 0; idx < 3; idx++){
-                if (std::abs(DX_ef_0[idx]) > 0.05){
+                
+                if (std::abs(DX_ef_0[idx]) > 0.030){
                     is_close_to_ef_traj = false;
                 }
             }
-            m_ct_sm.setObstacleAvoidance(!is_close_to_ef_traj);
+
+            if (is_close_to_ef_traj){
+                m_ct_sm.setObstacleAvoidance(!is_close_to_ef_traj);
+                m_sumDeltaQ.setZero();
+                m_sumDeltaQp.setZero();
+            }
             
 
             return tau;
