@@ -49,7 +49,7 @@ namespace tum_ics_ur_robot_lli {
             gazing_pose_msg.header.frame_id = "dh_arm_joint_3";
             gazing_des_pose_msg.header.frame_id = "dh_arm_joint_3";
 
-            m_desYPR = Vector3d::Zero();
+            m_desYPR_3p = Vector3d::Zero();
 
             m_fac = Vector6d::Ones();
             m_vObstacles_pos_0.reserve(m_max_num_obstacles);
@@ -77,7 +77,7 @@ namespace tum_ics_ur_robot_lli {
 
         SimpleEffortControl::~SimpleEffortControl() {}
 
-        void joint2eulerZYXatT3(const JointState &current_js, Vector3d &euler, Vector3d &eulerP){
+        void joint2eulerZYXatT3p(const JointState &current_js, Vector3d &euler, Vector3d &eulerP){
             Vector3d q456 = current_js.q.tail(3);
             Vector3d q456p = current_js.qp.tail(3);
 
@@ -87,25 +87,25 @@ namespace tum_ics_ur_robot_lli {
             // roll = - (q456[1] - M_PI_2);
 
             euler[0] = q456[0] + M_PI_2; //yaw - z
-            euler[1] = q456[2];         //pitch - y
-            euler[2] = -(q456[1] - M_PI_2); //roll - x
+            euler[1] = q456[1] - M_PI_2;         //pitch - y
+            euler[2] = q456[2]; //roll - x
 
             eulerP[0] = q456p[0];
-            eulerP[1] = q456p[2];
-            eulerP[2] = -q456p[1];
+            eulerP[1] = q456p[1];
+            eulerP[2] = q456p[2];
         }
 
-        void euler_p_ppZYXatT3_2_joint(const Vector3d &eulerP, const Vector3d &eulerPP, Vector3d &Qrp, Vector3d &Qrpp){
+        void euler_p_ppZYXatT3p_2_joint(const Vector3d &eulerP, const Vector3d &eulerPP, Vector3d &Qrp, Vector3d &Qrpp){
             // Qrp[0] = euler[0] - M_PI_2;
             Qrp[0] = eulerP[0];
             // Qrp[1] = -euler[2] + M_PI_2;
-            Qrp[1] = -eulerP[2];
+            Qrp[1] = eulerP[1];
             // Qrp[2] = euler[1];
-            Qrp[2] = eulerP[1];
+            Qrp[2] = eulerP[2];
 
             Qrpp[0] = eulerPP[0];
-            Qrpp[1] = -eulerPP[2];
-            Qrpp[2] = eulerPP[1];
+            Qrpp[1] = eulerPP[1];
+            Qrpp[2] = eulerPP[2];
         }
 
 
@@ -509,24 +509,30 @@ namespace tum_ics_ur_robot_lli {
                 ow::HomogeneousTransformation T_3_0 = m_ur10_model.T_j_0(current_js.q,2);
                 ow::HomogeneousTransformation T_6_0 = m_ur10_model.T_ef_0(current_js.q);
                 ow::HomogeneousTransformation Target_3 = getTargetHT_3(current_js, m_ef_x, m_target_pos_t);
+                ow::HomogeneousTransformation T_3_6 = T_3_0.inverse() * T_6_0;
+                ow::HomogeneousTransformation T_3p_3;
+                T_3p_3.affine() << Rzd(90), Vector3d::Zero();
 
                 // gazing pose
                 gazing_pose_msg.header.stamp = ros::Time::now();
                 gazing_pose_msg.header.seq = m_path_publish_ctr;
+
                 Vector3d euler, dummy;
-                joint2eulerZYXatT3(current_js, euler, dummy);
-                ow::HomogeneousTransformation eulerHT;
-                eulerHT.affine() << Rz(euler[0]) * Ry(euler[1]) * Rx(euler[2]), Vector3d::Zero();
-                gazing_pose_msg.pose = eulerHT.toPoseMsg();
-                gazing_pose_msg.pose.position = ow::HomogeneousTransformation(T_3_0.inverse() * T_6_0).pos();
+                joint2eulerZYXatT3p(current_js, euler, dummy);
+                ow::HomogeneousTransformation eulerHT_3p;
+                eulerHT_3p.affine() << Rz(euler[0]) * Ry(euler[1]) * Rx(euler[2]), Vector3d::Zero();
+                gazing_pose_msg.pose = ow::HomogeneousTransformation(T_3p_3 * eulerHT_3p).toPoseMsg();
+                gazing_pose_msg.pose.position = T_3_6.pos();
                 pubCurentGazingPose.publish(gazing_pose_msg);
 
                 // calculated desired gazing pose
                 gazing_des_pose_msg.header.stamp = ros::Time::now();
                 gazing_des_pose_msg.header.seq = m_path_publish_ctr;
-                eulerHT.affine() << Rz(m_desYPR[0]) * Ry(m_desYPR[1]) * Rx(m_desYPR[2]), ow::HomogeneousTransformation(T_3_0.inverse() * T_6_0).pos();
-                gazing_des_pose_msg.pose = eulerHT.toPoseMsg();
-                // gazing_des_pose_msg.pose.position = ow::HomogeneousTransformation(T_3_0.inverse() * T_6_0).pos();
+
+                ow::HomogeneousTransformation euler_desHT;
+                euler_desHT.affine() << Rz(m_desYPR_3p[0]) * Ry(m_desYPR_3p[1]) * Rx(m_desYPR_3p[2]), Vector3d::Zero();
+                gazing_des_pose_msg.pose = ow::HomogeneousTransformation(T_3p_3 * euler_desHT).toPoseMsg();
+                gazing_des_pose_msg.pose.position = T_3_6.pos();
                 pubDesiredGazingPose.publish(gazing_des_pose_msg);
 
                 // target gazing pose
@@ -534,36 +540,10 @@ namespace tum_ics_ur_robot_lli {
                 target_pose_msg.header.seq = m_path_publish_ctr;
                 // target_pose_msg.pose = Target_0.toPoseMsg();
                 target_pose_msg.pose = Target_3.toPoseMsg();
-
-                // ow::HomogeneousTransformation Rz;
-                // Rz.affine() << Rzd(180.0), Vector3d::Zero();
-                // Rz = Rz.inverse();
-                // ow::HomogeneousTransformation tmp1, tmp2;
-                // tmp2 = Rz*getTargetHT_3(current_js, m_ef_x, m_target_pos_t);
-                Vector3d Qd_t = Target_3.orien().eulerAngles(2,1,0);
-                tf::Matrix3x3 m(Target_3.orien().toQuaternionTF());
-                double roll, pitch, yaw;
-                m.getRPY(roll, pitch, yaw);
-                
-                // Qd_t = RAD2DEG(normal_eulerZYX(Qd_t));
-                Qd_t[0] = yaw;
-                Qd_t[1] = pitch;
-                Qd_t[2] = roll;
-
-                // Qd_t = RAD2DEG(Qd_t);
-
-                // target_pose_msg.pose.position.x = Qd_t[0];
-                // target_pose_msg.pose.position.y = Qd_t[1];
-                // target_pose_msg.pose.position.z = Qd_t[2];
-
-                // Matrix3d rot_zxy = Rz(current_js.q[3]+M_PI_2) * Ry(current_js.q[4]) * Rz(current_js.q[5]);
-                // ow::HomogeneousTransformation EF_3;
-                // EF_3.affine() << rot_zxy, Target_3.pos();                
-                // target_pose_msg.pose = Target_3.toPoseMsg();
+                pubTargetPose.publish(target_pose_msg);
 
                 // ROS_INFO_STREAM("Target_0 ZYX: " << Target_0.orien().eulerAngles(2,1,0).transpose());
                 // ROS_INFO_STREAM("EF_3 ZXY: " << (Target_3.orien().eulerAngles(2,1,2).transpose()));
-                pubTargetPose.publish(target_pose_msg);
 
 
                 // publish the ControlData (only for debugging)
@@ -736,8 +716,10 @@ namespace tum_ics_ur_robot_lli {
             // ROS_WARN_STREAM("Dir1: " << vDir1.transpose());
             // ROS_WARN_STREAM("Dir2: " << vDir2.transpose());
             // ROS_WARN_STREAM("Dir3: " << vDir3.transpose());
-            
-            HT.affine() << vDir3, vDir1, vDir2, fromPosition_0;
+            Matrix3d rot;
+            rot << vDir1, vDir2, vDir3;
+            rot = rot * Rxd(-90.0);
+            HT.affine() << rot, fromPosition_0;
             // hV1 = inDirectionOfPosition_0;
             // hV1[2] = 0;
             // HT.affine() << Matrix3d::Identity(), inDirectionOfPosition_0;
@@ -751,6 +733,14 @@ namespace tum_ics_ur_robot_lli {
             return Target_3;
         }
 
+        ow::HomogeneousTransformation SimpleEffortControl::getTargetHT_3p(const JointState &current_js, const Vector3d &fromPosition_0, const Vector3d &inDirectionOfPosition_0){
+            ow::HomogeneousTransformation T_3_0 = m_ur10_model.T_j_0(current_js.q,2);
+            ow::HomogeneousTransformation Target_3 = T_3_0.inverse() * getTargetHT_0(fromPosition_0, inDirectionOfPosition_0);
+            ow::HomogeneousTransformation T_3p_3;
+            T_3p_3.affine() << Rzd(90), Vector3d::Zero();
+            return (T_3p_3.inverse() * Target_3);
+        }
+
         Vector6d SimpleEffortControl::tauUR10Compensation(const Vector6d &Sq,
                                                     const Vector6d &Q, 
                                                     const Vector6d &Qp,
@@ -762,8 +752,10 @@ namespace tum_ics_ur_robot_lli {
             // calculate torque
             Vector6d tau_ur10_model_comp = Yr * m_theta;
 
-            // parameter update
-            m_theta -= m_gamma * Yr.transpose() * Sq;
+            // parameter learning/update - only in joint space
+            if (ControlMode::JS == m_ct_sm.getControlMode()){
+                m_theta -= m_gamma * Yr.transpose() * Sq;
+            }
 
             return tau_ur10_model_comp;
         }
@@ -886,6 +878,95 @@ namespace tum_ics_ur_robot_lli {
             return tau;
         }
 
+         Vector3d T2eulerZYX(ow::HomogeneousTransformation target){
+            tf::Matrix3x3 m(target.orien().toQuaternionTF());
+            double roll, pitch, yaw;
+            m.getRPY(roll, pitch, yaw);
+
+            Vector3d ypr;
+            ypr << yaw, pitch, roll;
+
+            return ypr;
+        }
+
+        Vector3d SimpleEffortControl::tauGazing(const JointState &current_js, const JointState &prev_js, Vector6d &commonQXrp, Vector6d &commonQXrpp, Vector6d &commonSq){
+
+            /* ============= GAZING ============= */
+            Vector3d EF_Xd_tm1_0 = m_ur10_model.T_ef_0(prev_js.q).pos();
+            Vector3d EF_Xd_t_0 = m_ur10_model.T_ef_0(current_js.q).pos();
+
+            ow::HomogeneousTransformation target;
+            Vector3d Qd_tm1 = T2eulerZYX(getTargetHT_3p(prev_js, EF_Xd_tm1_0, m_target_pos_tm1));
+            Vector3d Qd_t =   T2eulerZYX(getTargetHT_3p(current_js, EF_Xd_t_0, m_target_pos_t));
+            m_desYPR_3p = Qd_t;
+
+            Vector3d Qeuler, QeulerP;
+            joint2eulerZYXatT3p(current_js, Qeuler, QeulerP);
+            // ROS_WARN_STREAM("gaze Qdes t-1: " << Qd_tm1.transpose());
+            ROS_WARN_STREAM("gaze Qdes t  : " << Qd_t.transpose());
+            ROS_WARN_STREAM("gaze Qcurrent: " << Qeuler.transpose());
+
+
+            m_target_pos_tm1 = m_target_pos_t;
+            
+            Vector3d Qd = Qd_t;
+            // simple numeric differentiation
+            Vector3d Qdp = (Qd_t - Qd_tm1) / m_controlPeriod;
+            Vector3d Qdpp = Vector3d::Zero();
+            ROS_WARN_STREAM("gaze Qdp t:     " << Qdp.transpose());
+            ROS_WARN_STREAM("gaze QcurrentP: " << QeulerP.transpose());
+
+
+            // erros
+            Vector3d gazingDeltaQ = Qeuler - Qd;
+            Vector3d gazingDeltaQp = QeulerP - Qdp;
+            ROS_WARN_STREAM("gazingDeltaQ:  " << gazingDeltaQ.transpose());
+            ROS_WARN_STREAM("gazingDeltaQp: " << gazingDeltaQp.transpose());
+
+
+            Vector3d sumDeltaQ_inc = m_anti_windup.tail(3).array() * (gazingDeltaQ * m_controlPeriod).array();
+            Vector3d sumDeltaQp_inc = m_anti_windup.tail(3).array() * (gazingDeltaQp * m_controlPeriod).array();
+
+            m_gazingSumDeltaQ += sumDeltaQ_inc;
+            m_gazingSumDeltaQp += sumDeltaQp_inc;
+
+            // reference
+            Vector3d gazeQrp, gazeQrpp; // reference qr or xr
+            gazeQrp = Qdp - m_ct_sm.getKp(ControlMode::CS).bottomRightCorner(3,3) * gazingDeltaQ - m_ct_sm.getKi(ControlMode::CS).bottomRightCorner(3,3) * m_gazingSumDeltaQ;
+            gazeQrpp = Qdpp - m_ct_sm.getKp(ControlMode::CS).bottomRightCorner(3,3) * gazingDeltaQp - m_ct_sm.getKi(ControlMode::CS).bottomRightCorner(3,3) * m_gazingSumDeltaQp;
+            ROS_WARN_STREAM("gaze Qrp: " << gazeQrp.transpose());
+            ROS_WARN_STREAM("gaze Qrpp: " << gazeQrpp.transpose());
+
+            // convert back euler space reference to joint space
+            Vector3d QXrp, QXrpp;
+            // euler_p_ppZYXatT3p_2_joint(gazeQrp, gazeQrpp, QXrp, QXrpp);
+            commonQXrp.tail(3) = gazeQrp;
+            commonQXrpp.tail(3) = gazeQrpp;
+            // commonQXrpp.tail(3).setZero();
+
+            ROS_WARN_STREAM("commonQXrp: " << commonQXrp.tail(3).transpose());
+            ROS_WARN_STREAM("commonQXrpp: " << commonQXrpp.tail(3).transpose());
+
+            // controller 
+            Vector3d gazeSq, gazeSq2;
+            gazeSq = QeulerP - gazeQrp;
+            gazeSq2 = current_js.qp.tail(3) - QXrp;
+            // commonSq.tail(3) = current_js.qp.tail(3) - QXrp;
+            // commonSq.tail(3).setZero();
+
+            // !!!missing robot model compensation!!! --> have to be added later on
+            Vector3d gazeTau = -m_ct_sm.getKd(ControlMode::CS).bottomRightCorner(3,3) * gazeSq;
+            Vector3d gazeTau2 = -m_ct_sm.getKd(ControlMode::CS).bottomRightCorner(3,3) * gazeSq2;
+            ROS_WARN_STREAM("gazeSq: " << gazeSq.transpose());
+            ROS_WARN_STREAM("gazeTau: " << gazeTau.transpose());
+            ROS_WARN_STREAM("gazeSq2: " << gazeSq2.transpose());
+            ROS_WARN_STREAM("gazeTau2: " << gazeTau2.transpose());
+
+            // gazeTau2[2] = 0.0;
+
+            return gazeTau;
+        }
+
         Vector6d SimpleEffortControl::tau(const RobotTime &time,
                                           const JointState &current_js,
                                           const Vector6d &t_QXd,
@@ -917,7 +998,9 @@ namespace tum_ics_ur_robot_lli {
 
             Vector6d Qrp, Qrpp;
             Vector6d Xd_ef_0, Xdp_ef_0;
-            Eigen::Matrix<double, 6, 6> J_ef_0;
+            Matrix3d J_ef_0_top3x3;
+            Matrix6d J_ef_0;
+            PartialPivLU<Tum::Matrix3d> J_ef_0_top3x3_lu;
             PartialPivLU<Tum::Matrix6d> J_ef_0_lu;
 
             switch (m_ct_sm.getControlMode()) {
@@ -929,16 +1012,29 @@ namespace tum_ics_ur_robot_lli {
 
                 case ControlMode::CS: /* cartesian space */
                     J_ef_0 = m_ur10_model.J_ef_0(current_js.q);
-                    // Eigen::Matrix<double,3,6> J_ef_0_v = J_ef_0.topRows(3);
-                    // ROS_WARN_STREAM("Jef_0=\n" << J_ef_0);
+                    // // Eigen::Matrix<double,3,6> J_ef_0_v = J_ef_0.topRows(3);
+                    // // ROS_WARN_STREAM("Jef_0=\n" << J_ef_0);
                     J_ef_0_lu = J_ef_0.lu();
 
                     Sq = J_ef_0_lu.solve(Sqx);
                     Qrp = J_ef_0_lu.solve(QXrp);
                     Qrpp = J_ef_0_lu.solve(QXrpp);
-                    // ROS_WARN_STREAM("Sq=\n" << Sq.transpose());
-                    // ROS_WARN_STREAM("Qrp=\n" << Qrp.transpose());
-                    // ROS_WARN_STREAM("Qrpp=\n" << Qrpp.transpose());
+                    // // ROS_WARN_STREAM("Sq=\n" << Sq.transpose());
+                    // // ROS_WARN_STREAM("Qrp=\n" << Qrp.transpose());
+                    // // ROS_WARN_STREAM("Qrpp=\n" << Qrpp.transpose());
+
+                    // J_ef_0_top3x3 = m_ur10_model.J_ef_0(current_js.q).topLeftCorner(3,3);
+                    // J_ef_0_top3x3_lu = J_ef_0_top3x3.lu();
+                    
+                    // Sq.setZero();
+                    // Sq.head(3) = J_ef_0_top3x3_lu.solve(Sqx.head(3));
+
+                    // Qrp.setZero();
+                    // Qrp.head(3) = J_ef_0_top3x3_lu.solve(QXrp.head(3));
+
+                    // Qrpp.setZero();
+                    // Qrpp.head(3) = J_ef_0_top3x3_lu.solve(QXrpp.head(3));
+
                     Xd_ef_0 = t_QXd;
                     Xdp_ef_0 = t_QXdp;
 
@@ -1002,16 +1098,16 @@ namespace tum_ics_ur_robot_lli {
                 break;
             }
 
-            ROS_WARN_STREAM("tau: Sq  = " << origSq.transpose());
-            ROS_WARN_STREAM("tau: Sq'  = " << Sq.transpose());
-            ROS_WARN_STREAM("tau: Q    = " << Q.transpose());
-            ROS_WARN_STREAM("tau: Qp   = " << Qp.transpose());
-            ROS_WARN_STREAM("tau: Qrp  = " << origQrp.transpose());
+            // ROS_WARN_STREAM("tau: Sq  = " << origSq.transpose());
+            // ROS_WARN_STREAM("tau: Sq'  = " << Sq.transpose());
+            // ROS_WARN_STREAM("tau: Q    = " << Q.transpose());
+            // ROS_WARN_STREAM("tau: Qp   = " << Qp.transpose());
+            // ROS_WARN_STREAM("tau: Qrp  = " << origQrp.transpose());
             // Qrp.tail(3).setZero();
-            ROS_WARN_STREAM("tau: Qrp'  = " << Qrp.transpose());
-            ROS_WARN_STREAM("tau: Qrpp = " << origQrpp.transpose());
+            // ROS_WARN_STREAM("tau: Qrp'  = " << Qrp.transpose());
+            // ROS_WARN_STREAM("tau: Qrpp = " << origQrpp.transpose());
             // Qrpp.tail(3).setZero();
-            ROS_WARN_STREAM("tau: Qrpp' = " << Qrpp.transpose());
+            // ROS_WARN_STREAM("tau: Qrpp' = " << Qrpp.transpose());
 
             Vector6d model_comp_orig = tauUR10Compensation(origSq, Q, Qp, origQrp, origQrpp);
             Vector6d model_comp = tauUR10Compensation(Sq, Q, Qp, Qrp, Qrpp);
@@ -1020,94 +1116,6 @@ namespace tum_ics_ur_robot_lli {
             tau += model_comp;
 
             return tau;
-        }
-
-        Vector3d T2eulerZYX(ow::HomogeneousTransformation target){
-            tf::Matrix3x3 m(target.orien().toQuaternionTF());
-            double roll, pitch, yaw;
-            m.getRPY(roll, pitch, yaw);
-
-            Vector3d ypr;
-            ypr << yaw, pitch, roll;
-
-            return ypr;
-        }
-
-        Vector3d SimpleEffortControl::tauGazing(const JointState &current_js, const JointState &prev_js, Vector6d &commonQXrp, Vector6d &commonQXrpp, Vector6d &commonSq){
-
-            /* ============= GAZING ============= */
-            Vector3d EF_Xd_tm1_0 = m_ur10_model.T_ef_0(prev_js.q).pos();
-            Vector3d EF_Xd_t_0 = m_ur10_model.T_ef_0(current_js.q).pos();
-
-            ow::HomogeneousTransformation target;
-            Vector3d Qd_tm1 = T2eulerZYX(getTargetHT_3(prev_js, EF_Xd_tm1_0, m_target_pos_tm1));
-            Vector3d Qd_t =   T2eulerZYX(getTargetHT_3(current_js, EF_Xd_t_0, m_target_pos_t));
-            m_desYPR = Qd_t;
-
-            Vector3d Qeuler, QeulerP;
-            joint2eulerZYXatT3(current_js, Qeuler, QeulerP);
-            // ROS_WARN_STREAM("gaze Qdes t-1: " << Qd_tm1.transpose());
-            ROS_WARN_STREAM("gaze Qdes t  : " << Qd_t.transpose());
-            ROS_WARN_STREAM("gaze Qcurrent: " << Qeuler.transpose());
-
-
-            m_target_pos_tm1 = m_target_pos_t;
-            
-            Vector3d Qd = Qd_t;
-            // simple numeric differentiation
-            Vector3d Qdp = (Qd_t - Qd_tm1) / m_controlPeriod;
-            Vector3d Qdpp = Vector3d::Zero();
-            ROS_WARN_STREAM("gaze Qdp t:     " << Qdp.transpose());
-            ROS_WARN_STREAM("gaze QcurrentP: " << QeulerP.transpose());
-
-
-            // erros
-            Vector3d gazingDeltaQ = Qeuler - Qd;
-            Vector3d gazingDeltaQp = QeulerP - Qdp;
-            ROS_WARN_STREAM("gazingDeltaQ:  " << gazingDeltaQ.transpose());
-            ROS_WARN_STREAM("gazingDeltaQp: " << gazingDeltaQp.transpose());
-
-
-            Vector3d sumDeltaQ_inc = m_anti_windup.tail(3).array() * (gazingDeltaQ * m_controlPeriod).array();
-            Vector3d sumDeltaQp_inc = m_anti_windup.tail(3).array() * (gazingDeltaQp * m_controlPeriod).array();
-
-            m_gazingSumDeltaQ += sumDeltaQ_inc;
-            m_gazingSumDeltaQp += sumDeltaQp_inc;
-
-            // reference
-            Vector3d gazeQrp, gazeQrpp; // reference qr or xr
-            gazeQrp = Qdp - m_ct_sm.getKp(ControlMode::CS).bottomRightCorner(3,3) * gazingDeltaQ - m_ct_sm.getKi(ControlMode::CS).bottomRightCorner(3,3) * m_gazingSumDeltaQ;
-            gazeQrpp = Qdpp - m_ct_sm.getKp(ControlMode::CS).bottomRightCorner(3,3) * gazingDeltaQp - m_ct_sm.getKi(ControlMode::CS).bottomRightCorner(3,3) * m_gazingSumDeltaQp;
-            ROS_WARN_STREAM("gaze Qrp: " << gazeQrp.transpose());
-            ROS_WARN_STREAM("gaze Qrpp: " << gazeQrpp.transpose());
-
-            // convert back euler space reference to joint space
-            Vector3d QXrp, QXrpp;
-            euler_p_ppZYXatT3_2_joint(gazeQrp, gazeQrpp, QXrp, QXrpp);
-            commonQXrp.tail(3) = QXrp;
-            commonQXrpp.tail(3) = QXrpp;
-            // commonQXrpp.tail(3).setZero();
-
-            ROS_WARN_STREAM("commonQXrp: " << commonQXrp.tail(3).transpose());
-            ROS_WARN_STREAM("commonQXrpp: " << commonQXrpp.tail(3).transpose());
-
-            // controller 
-            Vector3d gazeSq, gazeSq2;
-            gazeSq = QeulerP - gazeQrp;
-            gazeSq2 = current_js.qp.tail(3) - QXrp;
-            commonSq.tail(3) = current_js.qp.tail(3) - QXrp;
-
-            // !!!missing robot model compensation!!! --> have to be added later on
-            Vector3d gazeTau = -m_ct_sm.getKd(ControlMode::CS).bottomRightCorner(3,3) * gazeSq;
-            Vector3d gazeTau2 = -m_ct_sm.getKd(ControlMode::CS).bottomRightCorner(3,3) * gazeSq2;
-            ROS_WARN_STREAM("gazeSq: " << gazeSq.transpose());
-            ROS_WARN_STREAM("gazeTau: " << gazeTau.transpose());
-            ROS_WARN_STREAM("gazeSq2: " << gazeSq2.transpose());
-            ROS_WARN_STREAM("gazeTau2: " << gazeTau2.transpose());
-
-            // gazeTau2[2] = 0.0;
-
-            return gazeTau2;
         }
 
         Vector6d SimpleEffortControl::update(const RobotTime &time,
@@ -1213,6 +1221,7 @@ namespace tum_ics_ur_robot_lli {
                         m_xGoal.head(3) = sinusoid_traj_gen(m_circ_traj_radius,m_circ_traj_frequency, m_circ_traj_phase_shift, m_circ_traj_center, 0.0)[0];
 
 
+                        m_ct_sm.startGazing();
                         // rotate upwards (euler angles ZYX)
                         // m_xGoal.tail(3) << 2.1715, -1.5, 0.9643;
 
@@ -1225,7 +1234,7 @@ namespace tum_ics_ur_robot_lli {
 
                 case ControlTask::MOVE_TO_CIRCULAR_TRAJECTORY_START: {
                     
-                    // m_ct_sm.startGazing();
+                    
 
                     // TODO adjust goal name
                     vQXd = getJointPVT5(m_xStart, m_xGoal, m_ct_sm.manouverTime(ellapsed_time), m_ct_sm.getTaskTime());
@@ -1246,6 +1255,8 @@ namespace tum_ics_ur_robot_lli {
                         double task_time = m_totalTime;
                         m_ct_sm.changeTask(ControlTask::CIRCULAR_EF_TRAJECTORY_TRACKING, task_time, ellapsed_time);
                         state_changed = true;
+
+                        // m_ct_sm.startGazing();
 
                         m_xStart = tf2pose(m_ur10_model.T_ef_0(current.q));
 
@@ -1314,6 +1325,9 @@ namespace tum_ics_ur_robot_lli {
                         ROS_ERROR_STREAM("bad control mode");
                         break;
                 }
+
+                Vector6d zeroo = Vector6d::Zero();
+                return tauUR10Compensation(zeroo, current.q, current.qp, current.qp, zeroo);
             }
 
             VectorDOFd QX, QXp; // current q or x

@@ -54,7 +54,7 @@ namespace tum_ics_ur_robot_lli {
             geometry_msgs::PoseStamped gazing_pose_msg;
             geometry_msgs::PoseStamped gazing_des_pose_msg;
 
-            Vector3d m_desYPR;
+            Vector3d m_desYPR_3p;
             Vector3d eulerT3;
 
             double m_last_time;
@@ -169,6 +169,7 @@ namespace tum_ics_ur_robot_lli {
 
             ow::HomogeneousTransformation getTargetHT_0(const Vector3d &fromPosition, const Vector3d &inDirectionOfPosition);
             ow::HomogeneousTransformation getTargetHT_3(const JointState &current_js, const Vector3d &fromPosition, const Vector3d &inDirectionOfPosition);
+            ow::HomogeneousTransformation getTargetHT_3p(const JointState &current_js, const Vector3d &fromPosition, const Vector3d &inDirectionOfPosition);
 
             Vector3d tauGazing(const JointState &current_js, const JointState &prev_js,
                              Vector6d &commonQXrp, Vector6d &commonQXrpp,

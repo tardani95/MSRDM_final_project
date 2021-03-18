@@ -6,11 +6,9 @@ Panels:
       Expanded:
         - /TF1
         - /TF1/Frames1
-        - /TF1/Frames1/dh_arm_joint_31
-        - /Pose1
-        - /Pose1/Status1
         - /MarkerArray2/Namespaces1
-        - /Pose2
+        - /CurrentGazingPose1
+        - /DesiredGazingPose1
       Splitter Ratio: 0.42116183042526245
     Tree Height: 548
   - Class: rviz/Selection
@@ -152,6 +150,8 @@ Visualization Manager:
       Queue Size: 2
       Value: true
       Visibility:
+        CurrentGazingPose: true
+        DesiredGazingPose: true
         Grid: true
         Image1: true
         InteractiveMarkers: true
@@ -321,7 +321,7 @@ Visualization Manager:
       Marker Topic: /trajectory_markers
       Name: MarkerArray
       Namespaces:
-        lines: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -337,7 +337,7 @@ Visualization Manager:
       Marker Topic: /obstacle_marker
       Name: MarkerArray
       Namespaces:
-        obstacles: true
+        {}
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -388,17 +388,32 @@ Visualization Manager:
       Value: true
     - Alpha: 1
       Axes Length: 1
-      Axes Radius: 0.10000000149011612
+      Axes Radius: 0.009999999776482582
       Class: rviz/Pose
       Color: 255; 25; 0
       Enabled: true
       Head Length: 0.30000001192092896
       Head Radius: 0.10000000149011612
-      Name: Pose
+      Name: CurrentGazingPose
       Shaft Length: 1
       Shaft Radius: 0.05000000074505806
       Shape: Axes
-      Topic: /target_pose2
+      Topic: /gazing_pose
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Axes Length: 0.5
+      Axes Radius: 0.009999999776482582
+      Class: rviz/Pose
+      Color: 255; 25; 0
+      Enabled: true
+      Head Length: 0.30000001192092896
+      Head Radius: 0.10000000149011612
+      Name: DesiredGazingPose
+      Shaft Length: 1
+      Shaft Radius: 0.05000000074505806
+      Shape: Axes
+      Topic: /gazing_des_pose
       Unreliable: false
       Value: true
   Enabled: true
@@ -429,25 +444,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 3.3891849517822266
+      Distance: 3.8275208473205566
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.5558048486709595
-        Y: 0.35986414551734924
-        Z: -0.11680895835161209
+        X: -0.46675845980644226
+        Y: -0.10320890694856644
+        Z: 0.3393379747867584
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.879797101020813
+      Pitch: 0.544797956943512
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.14717435836792
+      Yaw: 3.742253303527832
     Saved: ~
 Window Geometry:
   Displays:
