@@ -66,7 +66,7 @@ Visualization Manager:
         camera1:
           Value: false
         dh_arm_joint_0:
-          Value: true
+          Value: false
         dh_arm_joint_1:
           Value: true
         dh_arm_joint_2:
@@ -78,7 +78,7 @@ Visualization Manager:
         dh_arm_joint_5:
           Value: false
         dh_arm_joint_6:
-          Value: true
+          Value: false
         dh_arm_joint_ef:
           Value: false
         map:
@@ -338,7 +338,7 @@ Visualization Manager:
       Marker Topic: /obstacle_marker
       Name: MarkerArray
       Namespaces:
-        {}
+        obstacles: true
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -389,7 +389,7 @@ Visualization Manager:
       Value: true
     - Alpha: 1
       Axes Length: 1
-      Axes Radius: 0.009999999776482582
+      Axes Radius: 0.003000000026077032
       Class: rviz/Pose
       Color: 255; 25; 0
       Enabled: true
@@ -445,25 +445,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 2.9004902839660645
+      Distance: 2.7422597408294678
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.615513026714325
-        Y: -0.08007708936929703
-        Z: 0.3812074363231659
+        X: -0.7112177014350891
+        Y: 0.17968924343585968
+        Z: 0.6140169501304626
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6097980737686157
+      Pitch: 0.3997974991798401
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.439075469970703
+      Yaw: 4.209066390991211
     Saved: ~
 Window Geometry:
   Displays:

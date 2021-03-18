@@ -11,7 +11,7 @@ namespace tum_ics_ur_robot_lli {
                   m_last_time(0.0),
                   m_path_publish_ctr(0),
                 //   c_max_control_effort((Vector6d() << 330, 330, 150, 54, 54, 54).finished()),
-                  c_max_control_effort((Vector6d() << 300, 300, 130, 45, 35, 54).finished()),
+                  c_max_control_effort((Vector6d() << 300, 290, 130, 45, 30, 54).finished()),
                   m_Kp(Matrix6d::Zero()),
                   m_Kd(Matrix6d::Zero()),
                   m_Ki(Matrix6d::Zero()),
@@ -904,8 +904,8 @@ namespace tum_ics_ur_robot_lli {
             Vector3d Qeuler, QeulerP;
             joint2eulerZYXatT3p(current_js, Qeuler, QeulerP);
             // ROS_WARN_STREAM("gaze Qdes t-1: " << Qd_tm1.transpose());
-            ROS_WARN_STREAM("gaze Qdes t  : " << Qd_t.transpose());
-            ROS_WARN_STREAM("gaze Qcurrent: " << Qeuler.transpose());
+            // ROS_WARN_STREAM("gaze Qdes t  : " << Qd_t.transpose());
+            // ROS_WARN_STREAM("gaze Qcurrent: " << Qeuler.transpose());
 
 
             m_target_pos_tm1 = m_target_pos_t;
@@ -914,15 +914,15 @@ namespace tum_ics_ur_robot_lli {
             // simple numeric differentiation
             Vector3d Qdp = (Qd_t - Qd_tm1) / m_controlPeriod;
             Vector3d Qdpp = Vector3d::Zero();
-            ROS_WARN_STREAM("gaze Qdp t:     " << Qdp.transpose());
-            ROS_WARN_STREAM("gaze QcurrentP: " << QeulerP.transpose());
+            // ROS_WARN_STREAM("gaze Qdp t:     " << Qdp.transpose());
+            // ROS_WARN_STREAM("gaze QcurrentP: " << QeulerP.transpose());
 
 
             // erros
             Vector3d gazingDeltaQ = Qeuler - Qd;
             Vector3d gazingDeltaQp = QeulerP - Qdp;
-            ROS_WARN_STREAM("gazingDeltaQ:  " << gazingDeltaQ.transpose());
-            ROS_WARN_STREAM("gazingDeltaQp: " << gazingDeltaQp.transpose());
+            // ROS_WARN_STREAM("gazingDeltaQ:  " << gazingDeltaQ.transpose());
+            // ROS_WARN_STREAM("gazingDeltaQp: " << gazingDeltaQp.transpose());
 
 
             Vector3d sumDeltaQ_inc = m_anti_windup.tail(3).array() * (gazingDeltaQ * m_controlPeriod).array();
@@ -935,8 +935,8 @@ namespace tum_ics_ur_robot_lli {
             Vector3d gazeQrp, gazeQrpp; // reference qr or xr
             gazeQrp = Qdp - m_ct_sm.getKp(ControlMode::CS).bottomRightCorner(3,3) * gazingDeltaQ - m_ct_sm.getKi(ControlMode::CS).bottomRightCorner(3,3) * m_gazingSumDeltaQ;
             gazeQrpp = Qdpp - m_ct_sm.getKp(ControlMode::CS).bottomRightCorner(3,3) * gazingDeltaQp - m_ct_sm.getKi(ControlMode::CS).bottomRightCorner(3,3) * m_gazingSumDeltaQp;
-            ROS_WARN_STREAM("gaze Qrp: " << gazeQrp.transpose());
-            ROS_WARN_STREAM("gaze Qrpp: " << gazeQrpp.transpose());
+            // ROS_WARN_STREAM("gaze Qrp: " << gazeQrp.transpose());
+            // ROS_WARN_STREAM("gaze Qrpp: " << gazeQrpp.transpose());
 
             // convert back euler space reference to joint space
             Vector3d QXrp, QXrpp;
@@ -945,8 +945,8 @@ namespace tum_ics_ur_robot_lli {
             commonQXrpp.tail(3) = gazeQrpp;
             // commonQXrpp.tail(3).setZero();
 
-            ROS_WARN_STREAM("commonQXrp: " << commonQXrp.tail(3).transpose());
-            ROS_WARN_STREAM("commonQXrpp: " << commonQXrpp.tail(3).transpose());
+            // ROS_WARN_STREAM("commonQXrp: " << commonQXrp.tail(3).transpose());
+            // ROS_WARN_STREAM("commonQXrpp: " << commonQXrpp.tail(3).transpose());
 
             // controller 
             Vector3d gazeSq, gazeSq2;
@@ -958,10 +958,10 @@ namespace tum_ics_ur_robot_lli {
             // !!!missing robot model compensation!!! --> have to be added later on
             Vector3d gazeTau = -m_ct_sm.getKd(ControlMode::CS).bottomRightCorner(3,3) * gazeSq;
             Vector3d gazeTau2 = -m_ct_sm.getKd(ControlMode::CS).bottomRightCorner(3,3) * gazeSq2;
-            ROS_WARN_STREAM("gazeSq: " << gazeSq.transpose());
-            ROS_WARN_STREAM("gazeTau: " << gazeTau.transpose());
-            ROS_WARN_STREAM("gazeSq2: " << gazeSq2.transpose());
-            ROS_WARN_STREAM("gazeTau2: " << gazeTau2.transpose());
+            // ROS_WARN_STREAM("gazeSq: " << gazeSq.transpose());
+            // ROS_WARN_STREAM("gazeTau: " << gazeTau.transpose());
+            // ROS_WARN_STREAM("gazeSq2: " << gazeSq2.transpose());
+            // ROS_WARN_STREAM("gazeTau2: " << gazeTau2.transpose());
 
             // gazeTau2[2] = 0.0;
 
@@ -1072,7 +1072,7 @@ namespace tum_ics_ur_robot_lli {
                         // TODO gazing should modify Sq tail(3)
                         tau_gazing = tauGazing(current_js, m_prev_js, Qrp, Qrpp, Sq); // modifies the Qrp and Qrpp tail(3)
                         tau.tail(3) += tau_gazing;
-                        ROS_WARN_STREAM("gazeing tau = " << tau_gazing.transpose());
+                        // ROS_WARN_STREAM("gazeing tau = " << tau_gazing.transpose());
                     }
 
                     // impedance control for first 3 joints
@@ -1084,8 +1084,7 @@ namespace tum_ics_ur_robot_lli {
                         // TODO gazing should modify Sq tail(3)
                         tau_gazing = tauGazing(current_js, m_prev_js, Qrp, Qrpp, Sq); // modifies the Qrp and Qrpp tail(3)
                         tau.tail(3) += tau_gazing;
-                        ROS_WARN_STREAM("gazeing tau = " << tau_gazing.transpose());
-                        // ROS_WARN_STREAM("tau = " << tau.transpose());
+                        // ROS_WARN_STREAM("gazeing tau = " << tau_gazing.transpose());
                     }
                     
                     // cs control for first 3 joints
@@ -1110,10 +1109,10 @@ namespace tum_ics_ur_robot_lli {
             // Qrpp.tail(3).setZero();
             // ROS_WARN_STREAM("tau: Qrpp' = " << Qrpp.transpose());
 
-            Vector6d model_comp_orig = tauUR10Compensation(origSq, Q, Qp, origQrp, origQrpp);
+            // Vector6d model_comp_orig = tauUR10Compensation(origSq, Q, Qp, origQrp, origQrpp);
             Vector6d model_comp = tauUR10Compensation(Sq, Q, Qp, Qrp, Qrpp);
-            ROS_WARN_STREAM("tau model compensation  = " << model_comp_orig.transpose());
-            ROS_WARN_STREAM("tau model compensation' = " << model_comp.transpose());
+            // ROS_WARN_STREAM("tau model compensation  = " << model_comp_orig.transpose());
+            // ROS_WARN_STREAM("tau model compensation' = " << model_comp.transpose());
             tau += model_comp;
 
             return tau;
@@ -1381,11 +1380,9 @@ namespace tum_ics_ur_robot_lli {
 
             // anti-windup
             tau = SimpleEffortControl::antiWindUp(tau);
-            ROS_WARN_STREAM("max tau = " << tau.transpose());
+            // ROS_WARN_STREAM("tau = " << tau.transpose());
 
             // publishing path msgs
-            // double update_hz = 30;
-            // int max_path_size = 150;
             publishMsgs(current, Qd, Xd, ellapsed_time, m_update_hz, m_max_path_size);
 
             m_prev_js = current;
