@@ -988,7 +988,7 @@ namespace tum_ics_ur_robot_lli {
                         tau_gazing = tauGazing(current_js, m_prev_js, Qrp, Qrpp, Sq); // modifies the Qrp and Qrpp tail(3)
                         tau.tail(3) += tau_gazing;
                         ROS_WARN_STREAM("gazeing tau = " << tau_gazing.transpose());
-                        ROS_WARN_STREAM("tau = " << tau.transpose());
+                        // ROS_WARN_STREAM("tau = " << tau.transpose());
                     }
                     
                     // cs control for first 3 joints
@@ -1224,6 +1224,8 @@ namespace tum_ics_ur_robot_lli {
                     break;
 
                 case ControlTask::MOVE_TO_CIRCULAR_TRAJECTORY_START: {
+                    
+                    // m_ct_sm.startGazing();
 
                     // TODO adjust goal name
                     vQXd = getJointPVT5(m_xStart, m_xGoal, m_ct_sm.manouverTime(ellapsed_time), m_ct_sm.getTaskTime());

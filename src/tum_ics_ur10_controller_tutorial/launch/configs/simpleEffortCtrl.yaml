@@ -9,38 +9,40 @@ joint_space_ctrl:
   #proportional
   # gains_p: [ 50, 612.71801, 612.71801, 150, 40, 5 ]
   # gains_p: [ 5, 8.1696, 8.1696, 2.0548, 2.6667, 1.0000 ]
-  gains_p: [ 15, 15, 15, 2, 3, 1.0 ]
+  gains_p: [ 10, 15, 15, 2, 3, 1.0 ]
 
   #integral
   # gains_i: [ 0, 0, 0, 0, 0, 0]
   gains_i: [ 4, 3, 2, 1, 1, 1 ]
 
 cartesian_space_ctrl:
-  # [x y z, rx, ry, rz]
+  # [x y z,                         gazing blue-yaw-q4, red-roll-q5, green-pitch-q6]
   #derivative
   # gains_d: [ 50, 50, 75,  5, 5, 5 ]
-  gains_d: [ 50, 50, 60,  5, 5, 5 ]
+  gains_d: [ 100, 100, 100,                  70, 70, 5 ]
   # gains_d: [ 200, 75, 75, 73, 15, 5 ]
 
   #proportional
   # gains_p: [ 5, 5, 5,   0, 0, 0 ]
   # gains_p: [ 10, 10, 15,   5, 5, 5 ]
-  gains_p: [ 10, 10, 30,   5, 5, 5 ]
+  # gains_p: [ 10, 10, 30,                  5, 5, 1.0 ]
+  gains_p: [ 15, 15, 15,                  5, 5, 1.0 ]
 
   #integral
   # gains_i: [ 2, 2, 3, 1, 1, 1 ]
-  gains_i: [ 2, 2, 8, 1, 1, 1 ]
+  # gains_i: [ 2, 2, 8,                       0, 0, 0 ]
+  gains_i: [ 2, 2, 2,                       0, 0, 0 ]
   # gains_i: [ 1, 1, 1, 1, 1, 1]
   # gains_i: [ 5, 5, 5, 5, 5, 5]
 
 impedance_ctrl:
-  # [x y z, rx, ry, rz]
+  # [x y z]
   #derivative - damping
   # gains_d: [ 150, 150, 150,   0, 0, 0 ]
   gains_d: [ 150, 150, 150,   0, 0, 0 ]
 
   #proportional - stifness
-  gains_p: [ 500, 500, 5000,   0, 0, 0 ]
+  gains_p: [ 500, 500, 500,   0, 0, 0 ]
 
   #integral - only because unified parameter loading
   gains_i: [ 0, 0, 0, 0, 0, 0 ]
@@ -58,19 +60,20 @@ other_parameter_settings:
   non_singular_state: [ 0, -90, -90, -90, 90,  0 ]
   # non_singular_state: [ 180, -90, 90, -90, -90,  0 ]
 
-  time_move_out_sing_state: 3.0
+  time_move_out_sing_state: 5.0
 
   # in frame 0 coordinate system
   circle_traj:
-    center: [ 0.6, 0.2, 0.55 ] # [m]
-    radius: [ 0.25, 0.3, 0.1 ] # [m]
-    frequency: [ 0.6, 0.6, 0.1 ] # [rad/s]
+    center: [ 0.65, 0.25, 0.5 ] # [m]
+    radius: [ 0.25, 0.3, 0.2 ] # [m]
+    frequency: [ 0.9, 0.9, 0.1 ] # [rad/s]
+    # frequency: [ 0.4, 0.4, 0.1 ] # [rad/s]
     phase: [ 0.0, 90.0, 0.0 ] # [DEG]
 
   # collision avoidance
   link_modifier: 0.66
   radial_influence: 0.45
-  repulsive_force_gain: [ 1, 3, 3, 3, 3, 3]
+  repulsive_force_gain: [ 1, 3, 3, 5, 5, 5]
 
   # publish settings
   update_hz: 30
