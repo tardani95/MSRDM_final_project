@@ -1007,8 +1007,10 @@ namespace tum_ics_ur_robot_lli {
             ROS_WARN_STREAM("tau: Q    = " << Q.transpose());
             ROS_WARN_STREAM("tau: Qp   = " << Qp.transpose());
             ROS_WARN_STREAM("tau: Qrp  = " << origQrp.transpose());
+            // Qrp.tail(3).setZero();
             ROS_WARN_STREAM("tau: Qrp'  = " << Qrp.transpose());
             ROS_WARN_STREAM("tau: Qrpp = " << origQrpp.transpose());
+            // Qrpp.tail(3).setZero();
             ROS_WARN_STREAM("tau: Qrpp' = " << Qrpp.transpose());
 
             Vector6d model_comp_orig = tauUR10Compensation(origSq, Q, Qp, origQrp, origQrpp);
@@ -1084,22 +1086,28 @@ namespace tum_ics_ur_robot_lli {
             euler_p_ppZYXatT3_2_joint(gazeQrp, gazeQrpp, QXrp, QXrpp);
             commonQXrp.tail(3) = QXrp;
             commonQXrpp.tail(3) = QXrpp;
+            // commonQXrpp.tail(3).setZero();
 
             ROS_WARN_STREAM("commonQXrp: " << commonQXrp.tail(3).transpose());
             ROS_WARN_STREAM("commonQXrpp: " << commonQXrpp.tail(3).transpose());
 
             // controller 
-            Vector3d gazeSq;
+            Vector3d gazeSq, gazeSq2;
             gazeSq = QeulerP - gazeQrp;
-            // gazeSq = current_js.qp.tail(3) - QXrp;
+            gazeSq2 = current_js.qp.tail(3) - QXrp;
             commonSq.tail(3) = current_js.qp.tail(3) - QXrp;
 
             // !!!missing robot model compensation!!! --> have to be added later on
             Vector3d gazeTau = -m_ct_sm.getKd(ControlMode::CS).bottomRightCorner(3,3) * gazeSq;
+            Vector3d gazeTau2 = -m_ct_sm.getKd(ControlMode::CS).bottomRightCorner(3,3) * gazeSq2;
             ROS_WARN_STREAM("gazeSq: " << gazeSq.transpose());
             ROS_WARN_STREAM("gazeTau: " << gazeTau.transpose());
+            ROS_WARN_STREAM("gazeSq2: " << gazeSq2.transpose());
+            ROS_WARN_STREAM("gazeTau2: " << gazeTau2.transpose());
 
-            return gazeTau;
+            // gazeTau2[2] = 0.0;
+
+            return gazeTau2;
         }
 
         Vector6d SimpleEffortControl::update(const RobotTime &time,
