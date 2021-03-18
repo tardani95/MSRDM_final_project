@@ -44,11 +44,15 @@ namespace tum_ics_ur_robot_lli {
             ros::Publisher pubCartPath;
             ros::Publisher pubEFPath;
             ros::Publisher pubTargetPose;
+            ros::Publisher pubCurentGazingPose;
 
             visualization_msgs::MarkerArray m_marker_array;
             nav_msgs::Path path_desired_msg;
             nav_msgs::Path path_ef_msg;
             geometry_msgs::PoseStamped target_pose_msg;
+            geometry_msgs::PoseStamped gazing_pose_msg;
+
+            Vector3d eulerT3;
 
             double m_last_time;
             size_t m_path_publish_ctr;
