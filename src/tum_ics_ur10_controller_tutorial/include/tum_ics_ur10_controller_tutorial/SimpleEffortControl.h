@@ -68,6 +68,7 @@ namespace tum_ics_ur_robot_lli {
             double m_link_modifier;
             double m_radial_influence;
 
+            Vector6d m_fac;
             VVector3d m_vObstacles_pos_0;
             QVector<VVector3d> m_obs2joint_vDis;
             QVector<Vector6d> m_obs2joint_dis;
@@ -75,6 +76,7 @@ namespace tum_ics_ur_robot_lli {
 
             ur::UR10Model m_ur10_model;
             MatrixXd m_theta;
+            MatrixXd m_gamma;
 
             Vector6d m_tau_ur10_mod_comp;
 
@@ -134,8 +136,12 @@ namespace tum_ics_ur_robot_lli {
                                                         const Vector6d &Qrp, 
                                                         const Vector6d &Qrpp);
 
+            Vector3d tauObstacleAvoidance(const JointState &current_js, const Vector3d &Xd_ef_0, const Vector3d &Xdp_ef_0);
+
             Vector6d tau(const RobotTime &time,
                          const JointState &current_js,
+                         const Vector6d &t_QXd,
+                         const Vector6d &t_QXdp,
                          const Vector6d &t_QXrp,
                          const Vector6d &t_QXrpp,
                          const Vector6d &t_QXp,

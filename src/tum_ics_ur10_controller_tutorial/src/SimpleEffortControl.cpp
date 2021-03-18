@@ -43,6 +43,7 @@ namespace tum_ics_ur_robot_lli {
             target_pose_msg.header.frame_id = "dh_arm_joint_3";
             // target_pose_msg.header.frame_id = "dh_arm_joint_3";
 
+            m_fac = Vector6d::Ones();
             m_vObstacles_pos_0.reserve(m_max_num_obstacles);
             m_obs2joint_vDis.resize(m_max_num_obstacles);
             m_obs2joint_dis.resize(m_max_num_obstacles);
@@ -267,6 +268,15 @@ namespace tum_ics_ur_robot_lli {
                 ROS_ERROR_STREAM("radial_influence: is not in the interval [ 0.1 , inf], setting to default: " << m_radial_influence);
             }
 
+            // repulsive_force_gain
+            ros::param::get(ns + "/repulsive_force_gain", vec);
+            if (vec.size() < STD_DOF) {
+                m_fac = Vector6d::Ones();
+                ROS_ERROR_STREAM("repulsive_force_gain size bad, setting to default: " << m_fac.transpose());
+            }
+            for (int i = 0; i < STD_DOF; i++) {
+                m_fac(i) = vec[i];
+            }
 
             // m_update_hz
             ros::param::get(ns + "/update_hz", m_update_hz);
@@ -299,6 +309,7 @@ namespace tum_ics_ur_robot_lli {
 
             ROS_WARN_STREAM("Link modifier [-]: " << m_link_modifier);
             ROS_WARN_STREAM("Radial influence [-]: " << m_radial_influence);
+            ROS_WARN_STREAM("Repulsive force gain for joints [-]: " << m_fac.transpose());
             ROS_WARN_STREAM("Publisher update [Hz]: " << m_update_hz);
             ROS_WARN_STREAM("Max path length [-]: " << m_max_path_size);
 
@@ -577,8 +588,6 @@ namespace tum_ics_ur_robot_lli {
             VVector3d robot_joint_Xpos_0;
             robot_joint_Xpos_0.reserve(STD_DOF);
 
-            VVector3d _Xpos_0;
-
             Vector6d joint2obs_dis;
             joint2obs_dis.setZero();
 
@@ -692,8 +701,122 @@ namespace tum_ics_ur_robot_lli {
             m_theta -= m_gamma * Yr.transpose() * Sq;
         }
 
+        Vector3d SimpleEffortControl::tauObstacleAvoidance(const JointState &current_js, const Vector3d &Xd_ef_0, const Vector3d &Xdp_ef_0){
+            /* ============= obstacle avoidance ============== */
+            Vector3d tau = Vector3d::Zero();
+
+            Vector6d tau_des = Vector6d::Zero();
+            Vector6d tau_obs_avoid = Vector6d::Zero();
+
+            // virtual repulsive Force and Moment
+            VVector3d Fj_0;
+            Fj_0.resize(STD_DOF);
+            for( int jdx = 0; jdx < STD_DOF; jdx++ ) {
+                Fj_0[jdx].setZero();
+            }
+
+            // constant value to avoid singularities when the distance between obstacle
+            // and joints
+            double epsi = 0.001;
+            
+
+            //  Force gain for the repulsive forces
+            double mag;
+            double n_vDis;
+            
+            // impedance control for first 3 joints
+            // sum all the forces from all obstacles
+            for (int i_obs = 0; i_obs < m_num_obstacles; i_obs++){
+
+                // ROS_WARN_STREAM("Obstacle "<< i_obs << " 's distance to joints [m]: " << m_obs2joint_dis[i_obs].transpose() );
+                ROS_WARN_STREAM("Obstacle "<< i_obs << " act joints [bool]: " << m_obs2joint_act[i_obs].transpose());
+
+                for( int j_joint = 0; j_joint < STD_DOF; j_joint++){
+
+                    if (m_obs2joint_act[i_obs][j_joint]){
+
+                        n_vDis = m_obs2joint_dis[i_obs][j_joint];
+
+                        mag = 1 / std::pow( (epsi + n_vDis) , 2 );
+
+                        // !!IMPORTANT the negative sign hence it is a repulsive force!!
+                        Fj_0[j_joint] -= m_fac[j_joint] * mag / n_vDis * m_obs2joint_vDis[i_obs][j_joint]; 
+                    }   
+                }
+            }
+            
+            // obstacle avoidance torque calculation
+            for (int j_joint = 0; j_joint < STD_DOF; j_joint++){
+                Vector6d Tau_joint_0 = m_ur10_model.J_j_0(current_js.q, j_joint).topLeftCorner(3,6).transpose() * Fj_0[j_joint];
+                ROS_WARN_STREAM("Repulsive Torque from Joint "<< j_joint << " [Nm]: " << Tau_joint_0.transpose());
+                tau_obs_avoid += Tau_joint_0;
+            }
+
+            // Virtual attractive force to the desired target
+            // current position
+            Vector3d X = m_ur10_model.T_ef_0(current_js.q).pos();
+            Vector3d Xp = m_ur10_model.J_ef_0(current_js.q).topLeftCorner(3,6) * current_js.qp.head(3);
+
+            // errors
+            Vector3d DX_ef_0 = Xd_ef_0 - X;
+            Vector3d DXp_ef_0 = Xdp_ef_0 - Xp;
+
+            // =================================================================================================
+            // maximize attractive force
+            // =================================================================================================
+
+            double max_DX = 0.2;
+            double max_DXp = 1.0;
+
+            for(int idx = 0; idx < DX_ef_0.size(); idx++){
+                
+                if (DX_ef_0[idx] > max_DX){
+                    DX_ef_0[idx] = max_DX;
+                }  
+                
+                if (DX_ef_0[idx] < -max_DX){
+                    DX_ef_0[idx] = -max_DX;
+                }
+
+                if (DXp_ef_0[idx] > max_DXp){
+                    DXp_ef_0[idx] = max_DXp;
+                } 
+
+                if (DXp_ef_0[idx] < -max_DXp){
+                    DXp_ef_0[idx] = -max_DXp;
+                } 
+            }
+
+            Vector3d Fattr = m_ct_sm.getKpIM().topLeftCorner(3,3) * DX_ef_0 + m_ct_sm.getKdIM().topLeftCorner(3,3) * DXp_ef_0;
+
+            tau_des = m_ur10_model.J_ef_0(current_js.q).topLeftCorner(3,6).transpose() * Fattr;
+
+            ROS_WARN_STREAM("DX_ef_0 [m]: " << DX_ef_0.transpose());
+            ROS_WARN_STREAM("DXp_ef_0 [m]: " << DXp_ef_0.transpose());
+            ROS_WARN_STREAM("Force attractive destination [Nm]: " << Fattr.transpose());
+            
+            tau.setZero();
+            tau = tau_obs_avoid.head(3) + tau_des.head(3);
+            ROS_WARN_STREAM("Torque avoidance              [Nm]: " << tau_obs_avoid.transpose());
+            ROS_WARN_STREAM("Torque tracking               [Nm]: " << tau_des.transpose());
+            ROS_WARN_STREAM("Torque control (avoidance + tracking) [Nm]: " << tau.transpose());
+            
+            bool is_close_to_ef_traj = true;
+            for(int idx = 0; idx < 3; idx++){
+                if (std::abs(DX_ef_0[idx]) > 0.05){
+                    is_close_to_ef_traj = false;
+                }
+            }
+            m_ct_sm.setObstacleAvoidance(!is_close_to_ef_traj);
+            
+
+            return tau;
+        }
+
         Vector6d SimpleEffortControl::tau(const RobotTime &time,
                                           const JointState &current_js,
+                                          const Vector6d &t_QXd,
+                                          const Vector6d &t_QXdp,
                                           const Vector6d &t_QXrp,
                                           const Vector6d &t_QXrpp,
                                           const Vector6d &t_QXp,
@@ -714,14 +837,13 @@ namespace tum_ics_ur_robot_lli {
             Q = current_js.q;
             Qp = current_js.qp;
 
-            ur::UR10Model::Regressor Yr;
-
             Vector6d Sq, Sqx;
 
             // controller 
             Sqx = QXp - QXrp;
 
             Vector6d Qrp, Qrpp;
+            Vector6d Xd_ef_0, Xdp_ef_0;
             Eigen::Matrix<double, 6, 6> J_ef_0;
             PartialPivLU<Tum::Matrix6d> J_ef_0_lu;
 
@@ -730,7 +852,6 @@ namespace tum_ics_ur_robot_lli {
                     Sq = Sqx;
                     Qrp = QXrp;
                     Qrpp = QXrpp;
-                    Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
                     break;
 
                 case ControlMode::CS: /* cartesian space */
@@ -1051,27 +1172,6 @@ namespace tum_ics_ur_robot_lli {
                 }
                     break;
 
-                case ControlTask::OBSTACLE_AVOIDANCE: {
-                    QXd.setZero();
-                    QXdp.setZero();
-                    QXdpp.setZero();
-
-                    Xd.setZero();
-                    Xdp.setZero();
-                    Xdpp.setZero();
-
-                    if (!m_ct_sm.isRunning(ellapsed_time)) {
-                        // TODO adjust time
-                        double task_time = 2.0;
-                        m_ct_sm.changeTask(ControlTask::BREAK, task_time, ellapsed_time);
-                        state_changed = true;
-
-                        ROS_WARN_STREAM("State Machine: Break and start over!\n Task time = " << task_time);
-                    }
-                }
-                    break;
-
-
                 default:
                     ROS_ERROR_STREAM("Unknown ControlTask!");
             }
@@ -1140,101 +1240,14 @@ namespace tum_ics_ur_robot_lli {
 
             // torque calculation
             Vector3d tau_gazing;
-            Vector6d dummy1, dummy2;
-            if (!state_changed && m_ct_sm.isGazing()){
-                tau_gazing = tauGazing(current, m_prev_js, dummy1, dummy2);
-                tau.tail(3) = tau_gazing;
-                ROS_WARN_STREAM("gazeing tau = " << tau.transpose());
-            }
 
-            tau_control = SimpleEffortControl::tau(time, current, QXrp, QXrpp, QXp, tau_model_comp);
+            tau_control = SimpleEffortControl::tau(time, current, QXd, QXdp, QXrp, QXrpp, QXp, tau_model_comp);
             // ROS_WARN_STREAM("raw tau = " << tau.transpose());
 
 
-            /* ============= obstacle avoidance ============== */
-            Vector6d tau_des = Vector6d::Zero();
-            Vector6d tau_obs_avoid = Vector6d::Zero();
-            Vector6d tau_grav_comp = Vector6d::Zero();
-
-            // virtual repulsive Force and Moment
-            VVector6d Fj_0;
-            Fj_0.resize(STD_DOF);
-            for( int jdx = 0; jdx < STD_DOF; jdx++ ) {
-                Fj_0[jdx].setZero();
-            }
-
-            // constant value to avoid singularities when the distance between obstacle
-            // and joints
-            double epsi = 0.001;
-            
-            //  Force gain for the repulsive forces
-            double fac = 0.5;
-
-            double mag;
-            double n_vDis;
-
             if ( isObstacleClose(current, m_radial_influence) ){
                 // obstacle avoidance
-                ROS_INFO_STREAM("Obstacle avoidance!");
-
-                // sum all the forces from all obstacles
-                for (int i_obs = 0; i_obs < m_num_obstacles; i_obs++){
-
-                    // ROS_WARN_STREAM("Obstacle "<< i_obs << " 's distance to joints [m]: " << m_obs2joint_dis[i_obs].transpose() );
-                    ROS_WARN_STREAM("Obstacle "<< i_obs << " act joints [bool]: " << m_obs2joint_act[i_obs].transpose());
-
-                    for( int j_joint = 0; j_joint < STD_DOF; j_joint++){
-
-                        if (m_obs2joint_act[i_obs][j_joint]){
-
-                            n_vDis = m_obs2joint_dis[i_obs][j_joint];
-
-                            mag = 1 / std::pow( (epsi + n_vDis) , 2 );
-
-                            // !!IMPORTANT the negative sign hence it is a repulsive force!!
-                            Fj_0[j_joint].head(3) -= fac * mag / n_vDis * m_obs2joint_vDis[i_obs][j_joint]; 
-                        }   
-                    }
-                }
-                
-                // obstacle avoidance torque calculation
-                for (int j_joint = 0; j_joint < STD_DOF; j_joint++){
-                    Vector6d Tau_joint_0 = m_ur10_model.J_j_0(current.q, j_joint).transpose() * Fj_0[j_joint];
-                    ROS_WARN_STREAM("Repulsive Torque from Joint "<< j_joint << " [Nm]: " << Tau_joint_0.transpose());
-                    tau_obs_avoid += Tau_joint_0;
-                }
-
-                // gravitational force compensation
-                tau_grav_comp = m_ur10_model.gravityVector(current.q);
-
-                // Virtual attractive force to the desired target
-                // TODO change m_DeltaQ
-                Vector6d Fattr = m_ct_sm.getKpCS() * m_DeltaQ + m_ct_sm.getKdCS() * m_DeltaQp;
-                tau_des = m_ur10_model.J_ef_0(current.q) * Fattr;
-
-                ROS_WARN_STREAM("m_DeltaQ [m]: " << m_DeltaQ.transpose());
-                ROS_WARN_STREAM("m_DeltaQp [m]: " << m_DeltaQp.transpose());
-                ROS_WARN_STREAM("Force attractive destination [Nm]: " << Fattr.transpose());
-
-                // TODO maximize attractive force
-                
-                ROS_WARN_STREAM("Torque control                [Nm]: " << tau_control.transpose());
-
-                if ( ControlMode::CS == m_ct_sm.getControlMode()) {
-                    tau_obs_avoid.tail(3).setZero();
-                    tau_grav_comp.tail(3).setZero();
-                    tau_des.tail(3).setZero();
-
-                    tau_control.head(3) = (tau_des + tau_obs_avoid + tau_model_comp).head(3);
-
-                } else {
-                    // tau_control = tau_des + tau_obs_avoid + tau_grav_comp;
-                }
-
-                ROS_WARN_STREAM("Torque control modified       [Nm]: " << tau_control.transpose());
-                ROS_WARN_STREAM("Torque avoidance              [Nm]: " << tau_obs_avoid.transpose());
-                ROS_WARN_STREAM("Torque gravity compensation   [Nm]: " << tau_grav_comp.transpose());
-                
+                m_ct_sm.setObstacleAvoidance(true);                
             }
 
 

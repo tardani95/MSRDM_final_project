@@ -245,6 +245,7 @@ namespace tum_ics_ur_robot_lli {
 
         void ControlTaskStateMachine::setObstacleAvoidance(bool state){
             obstacle_avoidance_on = state;
+            ROS_WARN_STREAM("Obstacle avoidance set to: "<< (obstacle_avoidance_on ? "TRUE" : "FALSE"));
         }
 
     }  // namespace RobotControllers
