@@ -440,8 +440,15 @@ namespace tum_ics_ur_robot_lli {
                     b_anti_windup = true;
                     ss << idx << ", ";
                     m_anti_windup[idx] = 0.0;
+                } else if (tau_idx < -max_tau_idx){
+                    tau[idx] = -max_tau_idx;
+                    // switch on anti-windup
+                    b_anti_windup = true;
+                    ss << idx << ", ";
+                    m_anti_windup[idx] = 0.0;
                 } else {
                     m_anti_windup[idx] = 1.0;
+
                 }
             }
 
