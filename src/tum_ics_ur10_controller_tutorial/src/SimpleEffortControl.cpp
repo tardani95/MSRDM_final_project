@@ -11,7 +11,7 @@ namespace tum_ics_ur_robot_lli {
                   m_last_time(0.0),
                   m_path_publish_ctr(0),
                 //   c_max_control_effort((Vector6d() << 330, 330, 150, 54, 54, 54).finished()),
-                  c_max_control_effort((Vector6d() << 300, 300, 130, 40, 40, 40).finished()),
+                  c_max_control_effort((Vector6d() << 300, 300, 130, 45, 35, 54).finished()),
                   m_Kp(Matrix6d::Zero()),
                   m_Kd(Matrix6d::Zero()),
                   m_Ki(Matrix6d::Zero()),
@@ -756,6 +756,7 @@ namespace tum_ics_ur_robot_lli {
             if (ControlMode::JS == m_ct_sm.getControlMode()){
                 m_theta -= m_gamma * Yr.transpose() * Sq;
             }
+            // m_theta -= m_gamma * Yr.transpose() * Sq;
 
             return tau_ur10_model_comp;
         }
