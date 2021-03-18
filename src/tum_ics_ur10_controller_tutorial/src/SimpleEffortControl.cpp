@@ -10,7 +10,8 @@ namespace tum_ics_ur_robot_lli {
                   m_startFlag(false),
                   m_last_time(0.0),
                   m_path_publish_ctr(0),
-                  c_max_control_effort((Vector6d() << 330, 330, 150, 54, 54, 54).finished()),
+                //   c_max_control_effort((Vector6d() << 330, 330, 150, 54, 54, 54).finished()),
+                  c_max_control_effort((Vector6d() << 300, 300, 130, 40, 40, 40).finished()),
                   m_Kp(Matrix6d::Zero()),
                   m_Kd(Matrix6d::Zero()),
                   m_Ki(Matrix6d::Zero()),
@@ -40,11 +41,15 @@ namespace tum_ics_ur_robot_lli {
             pubEFPath = n.advertise<nav_msgs::Path>("path_ef_traj", 10);
             pubTargetPose = n.advertise<geometry_msgs::PoseStamped>("target_pose", 100);
             pubCurentGazingPose = n.advertise<geometry_msgs::PoseStamped>("gazing_pose", 100);
+            pubDesiredGazingPose = n.advertise<geometry_msgs::PoseStamped>("gazing_des_pose", 100);
 
             path_desired_msg.header.frame_id = "dh_arm_joint_0";
             path_ef_msg.header.frame_id = "dh_arm_joint_0";
             target_pose_msg.header.frame_id = "dh_arm_joint_3";
             gazing_pose_msg.header.frame_id = "dh_arm_joint_3";
+            gazing_des_pose_msg.header.frame_id = "dh_arm_joint_3";
+
+            m_desYPR = Vector3d::Zero();
 
             m_fac = Vector6d::Ones();
             m_vObstacles_pos_0.reserve(m_max_num_obstacles);
@@ -505,6 +510,7 @@ namespace tum_ics_ur_robot_lli {
                 ow::HomogeneousTransformation T_6_0 = m_ur10_model.T_ef_0(current_js.q);
                 ow::HomogeneousTransformation Target_3 = getTargetHT_3(current_js, m_ef_x, m_target_pos_t);
 
+                // gazing pose
                 gazing_pose_msg.header.stamp = ros::Time::now();
                 gazing_pose_msg.header.seq = m_path_publish_ctr;
                 Vector3d euler, dummy;
@@ -515,7 +521,15 @@ namespace tum_ics_ur_robot_lli {
                 gazing_pose_msg.pose.position = ow::HomogeneousTransformation(T_3_0.inverse() * T_6_0).pos();
                 pubCurentGazingPose.publish(gazing_pose_msg);
 
+                // calculated desired gazing pose
+                gazing_des_pose_msg.header.stamp = ros::Time::now();
+                gazing_des_pose_msg.header.seq = m_path_publish_ctr;
+                eulerHT.affine() << Rz(m_desYPR[0]) * Ry(m_desYPR[1]) * Rx(m_desYPR[2]), ow::HomogeneousTransformation(T_3_0.inverse() * T_6_0).pos();
+                gazing_des_pose_msg.pose = eulerHT.toPoseMsg();
+                // gazing_des_pose_msg.pose.position = ow::HomogeneousTransformation(T_3_0.inverse() * T_6_0).pos();
+                pubDesiredGazingPose.publish(gazing_des_pose_msg);
 
+                // target gazing pose
                 target_pose_msg.header.stamp = ros::Time::now();
                 target_pose_msg.header.seq = m_path_publish_ctr;
                 // target_pose_msg.pose = Target_0.toPoseMsg();
@@ -1026,6 +1040,7 @@ namespace tum_ics_ur_robot_lli {
             ow::HomogeneousTransformation target;
             Vector3d Qd_tm1 = T2eulerZYX(getTargetHT_3(prev_js, EF_Xd_tm1_0, m_target_pos_tm1));
             Vector3d Qd_t =   T2eulerZYX(getTargetHT_3(current_js, EF_Xd_t_0, m_target_pos_t));
+            m_desYPR = Qd_t;
 
             Vector3d Qeuler, QeulerP;
             joint2eulerZYXatT3(current_js, Qeuler, QeulerP);
@@ -1179,11 +1194,9 @@ namespace tum_ics_ur_robot_lli {
 
                     if (!m_ct_sm.isRunning(ellapsed_time)) {
                         // TODO adjust time
-                        double task_time = 3.0;
+                        double task_time = 6.0;
                         m_ct_sm.changeTask(ControlTask::MOVE_TO_CIRCULAR_TRAJECTORY_START, task_time, ellapsed_time);
                         state_changed = true;
-
-                        m_ct_sm.startGazing();
 
                         m_xStart = tf2pose(m_ur10_model.T_ef_0(current.q));
                         m_xGoal = m_xStart;
