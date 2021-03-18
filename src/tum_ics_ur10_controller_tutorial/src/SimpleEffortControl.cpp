@@ -743,6 +743,8 @@ namespace tum_ics_ur_robot_lli {
 
             // parameter update
             m_theta -= m_gamma * Yr.transpose() * Sq;
+
+            return tau_ur10_model_comp;
         }
 
         Vector3d SimpleEffortControl::tauObstacleAvoidance(const JointState &current_js, const Vector3d &Xd_ef_0, const Vector3d &Xdp_ef_0){
@@ -975,6 +977,10 @@ namespace tum_ics_ur_robot_lli {
             }
 
             tau += tauUR10Compensation(Sq, Q, Qp, Qrp, Qrpp);
+
+            Vector6d model_comp = tauUR10Compensation(Sq, Q, Qp, Qrp, Qrpp);
+            ROS_WARN_STREAM("tau model compensation' = " << model_comp.transpose());
+            tau += model_comp;
 
             return tau;
         }
