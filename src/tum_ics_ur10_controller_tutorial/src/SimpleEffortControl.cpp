@@ -936,6 +936,10 @@ namespace tum_ics_ur_robot_lli {
             tau.setZero();
             Vector3d tau_gazing = Vector3d::Zero();
 
+            Vector6d origSq = Sq;
+            Vector6d origQrp = Qrp;
+            Vector6d origQrpp = Qrpp;
+
             switch (m_ct_sm.getControlMode())
             {
             case ControlMode::JS:{
@@ -963,6 +967,7 @@ namespace tum_ics_ur_robot_lli {
                         tau_gazing = tauGazing(current_js, m_prev_js, Qrp, Qrpp, Sq); // modifies the Qrp and Qrpp tail(3)
                         tau.tail(3) += tau_gazing;
                         ROS_WARN_STREAM("gazeing tau = " << tau_gazing.transpose());
+                        ROS_WARN_STREAM("tau = " << tau.transpose());
                     }
                     
                     // cs control for first 3 joints
@@ -976,9 +981,18 @@ namespace tum_ics_ur_robot_lli {
                 break;
             }
 
-            tau += tauUR10Compensation(Sq, Q, Qp, Qrp, Qrpp);
+            ROS_WARN_STREAM("tau: Sq  = " << origSq.transpose());
+            ROS_WARN_STREAM("tau: Sq'  = " << Sq.transpose());
+            ROS_WARN_STREAM("tau: Q    = " << Q.transpose());
+            ROS_WARN_STREAM("tau: Qp   = " << Qp.transpose());
+            ROS_WARN_STREAM("tau: Qrp  = " << origQrp.transpose());
+            ROS_WARN_STREAM("tau: Qrp'  = " << Qrp.transpose());
+            ROS_WARN_STREAM("tau: Qrpp = " << origQrpp.transpose());
+            ROS_WARN_STREAM("tau: Qrpp' = " << Qrpp.transpose());
 
+            Vector6d model_comp_orig = tauUR10Compensation(origSq, Q, Qp, origQrp, origQrpp);
             Vector6d model_comp = tauUR10Compensation(Sq, Q, Qp, Qrp, Qrpp);
+            ROS_WARN_STREAM("tau model compensation  = " << model_comp_orig.transpose());
             ROS_WARN_STREAM("tau model compensation' = " << model_comp.transpose());
             tau += model_comp;
 
@@ -1060,7 +1074,8 @@ namespace tum_ics_ur_robot_lli {
 
             // !!!missing robot model compensation!!! --> have to be added later on
             Vector3d gazeTau = -m_ct_sm.getKd(ControlMode::CS).bottomRightCorner(3,3) * gazeSq;
-
+            ROS_WARN_STREAM("gazeSq: " << gazeSq.transpose());
+            ROS_WARN_STREAM("gazeTau: " << gazeTau.transpose());
 
             return gazeTau;
         }
@@ -1083,11 +1098,11 @@ namespace tum_ics_ur_robot_lli {
 
             // control torque
             Vector6d tau;
-            Vector6d tau_control;
+            // Vector6d tau_control;
             Vector6d tau_model_comp;
             tau.setZero();
-            tau_control.setZero();
-            tau_model_comp.setZero();
+            // tau_control.setZero();
+            // tau_model_comp.setZero();
 
             // poly spline QXd, QXdp, QXdpp
             VVectorDOFd vQXd;
@@ -1311,12 +1326,17 @@ namespace tum_ics_ur_robot_lli {
                 m_ct_sm.setObstacleAvoidance(true);                
             }
 
-            tau_control = SimpleEffortControl::tau(time, current, QXd, QXdp, QXrp, QXrpp, QXp, tau_model_comp);
+
+            // m_ct_sm.setObstacleAvoidance(true);                
+
+
+
+            tau = SimpleEffortControl::tau(time, current, QXd, QXdp, QXrp, QXrpp, QXp, tau_model_comp);
             // ROS_WARN_STREAM("raw tau = " << tau.transpose());
 
             // anti-windup
-            tau_control = SimpleEffortControl::antiWindUp(tau_control);
-            // ROS_WARN_STREAM("max tau = " << tau.transpose());
+            tau = SimpleEffortControl::antiWindUp(tau);
+            ROS_WARN_STREAM("max tau = " << tau.transpose());
 
             // publishing path msgs
             // double update_hz = 30;
@@ -1325,7 +1345,7 @@ namespace tum_ics_ur_robot_lli {
 
             m_prev_js = current;
 
-            return tau_control;
+            return tau;
         }
 
         bool SimpleEffortControl::stop() {
