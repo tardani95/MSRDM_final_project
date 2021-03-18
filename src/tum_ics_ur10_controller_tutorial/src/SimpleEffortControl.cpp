@@ -384,13 +384,12 @@ namespace tum_ics_ur_robot_lli {
             Vector4d zero4d;
             zero4d.setZero();
             zero4d[3] = 1.0;
-            // Vector3d vX = T.position()
-            Vector3d vX = (T * zero4d).head(3);
             Matrix3d rot_mat = T.matrix().topLeftCorner(3, 3);
             Vector3d euler_angles = rot_mat.eulerAngles(2, 1, 0);
             Vector6d pose;
-            pose.topRows(3) = vX;
-            pose.bottomRows(3) = euler_angles;
+            pose.topRows(3) = T.pos();
+            // pose.bottomRows(3) = T.orientation().eulerAngles(2,1,0);
+            pose.bottomRows(3) = Vector3d::Zero();
 
             return pose;
         }
@@ -461,9 +460,9 @@ namespace tum_ics_ur_robot_lli {
             
             if ( (current_time - m_last_time) > (1 / update_hz) ) {
                 
-                ow::HomogeneousTransformation Target_0 = getTargetHT_0(m_ef_x, m_target_pos_t);
+                // ow::HomogeneousTransformation Target_0 = getTargetHT_0(m_ef_x, m_target_pos_t);
                 ow::HomogeneousTransformation T_3_0 = m_ur10_model.T_j_0(current_js.q,2);
-                ow::HomogeneousTransformation Target_3 = T_3_0.inverse() * Target_0;
+                ow::HomogeneousTransformation Target_3 = getTargetHT_3(current_js, m_ef_x, m_target_pos_t);
 
                 target_pose_msg.header.stamp = ros::Time::now();
                 target_pose_msg.header.seq = m_path_publish_ctr;
@@ -866,8 +865,9 @@ namespace tum_ics_ur_robot_lli {
                     // ROS_WARN_STREAM("Sq=\n" << Sq.transpose());
                     // ROS_WARN_STREAM("Qrp=\n" << Qrp.transpose());
                     // ROS_WARN_STREAM("Qrpp=\n" << Qrpp.transpose());
+                    Xd_ef_0 = t_QXd;
+                    Xdp_ef_0 = t_QXdp;
 
-                    Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
                     break;
 
                 default:
@@ -875,20 +875,55 @@ namespace tum_ics_ur_robot_lli {
                     Sq = Sqx;
                     Qrp = QXrp;
                     Qrpp = QXrpp;
-                    Yr = m_ur10_model.regressor(Q, Qp, Qrp, Qrpp);
             }
 
             // ROS_WARN_STREAM("Sq =\n" << Sq);
             // calculate torque
-            tau_ur10_model_comp = Yr * m_theta;
 
-            tau = -m_ct_sm.getKd() * Sq + tau_ur10_model_comp;
+            tau.setZero();
+            Vector3d tau_gazing;
 
-            // parameter update
-            MatrixXd gamma = MatrixXd::Identity(81, 81);
-            gamma *= 0.0002;
-            // parameter vector update
-            m_theta -= gamma * Yr.transpose() * Sq;
+            switch (m_ct_sm.getControlMode())
+            {
+            case ControlMode::JS:{
+                tau += -m_ct_sm.getKd() * Sq;
+            }
+            break;
+
+            case ControlMode::CS:{
+                if(m_ct_sm.isObstacleAvoidanceOn()){
+
+                    if(m_ct_sm.isGazing()){
+                        // TODO gazing should modify Sq tail(3)
+                        tau_gazing = tauGazing(current_js, m_prev_js, Qrp, Qrpp, Sq); // modifies the Qrp and Qrpp tail(3)
+                        tau.tail(3) += tau_gazing;
+                        ROS_WARN_STREAM("gazeing tau = " << tau_gazing.transpose());
+                    }
+
+                    // impedance control for first 3 joints
+                    Vector3d tau_obs_avoid = tauObstacleAvoidance(current_js, Xd_ef_0.head(3), Xdp_ef_0.head(3));
+                    tau.head(3) += tau_obs_avoid;
+                }else{
+
+                    if(m_ct_sm.isGazing()){
+                        // TODO gazing should modify Sq tail(3)
+                        tau_gazing = tauGazing(current_js, m_prev_js, Qrp, Qrpp, Sq); // modifies the Qrp and Qrpp tail(3)
+                        tau.tail(3) += tau_gazing;
+                        ROS_WARN_STREAM("gazeing tau = " << tau_gazing.transpose());
+                    }
+                    
+                    // cs control for first 3 joints
+                    tau.head(3) += -m_ct_sm.getKd().topLeftCorner(3,3) * Sq.head(3);
+                }
+            }
+            break;
+
+            default:
+                ROS_ERROR_STREAM("tau() - NO SUCH control mode");
+                break;
+            }
+
+            tau += tauUR10Compensation(Sq, Q, Qp, Qrp, Qrpp);
 
             return tau;
         }
@@ -1096,11 +1131,11 @@ namespace tum_ics_ur_robot_lli {
 
                     if (!m_ct_sm.isRunning(ellapsed_time)) {
                         // TODO adjust time
-                        double task_time = 3.0;
+                        double task_time = 10.0;
                         m_ct_sm.changeTask(ControlTask::MOVE_TO_CIRCULAR_TRAJECTORY_START, task_time, ellapsed_time);
                         state_changed = true;
 
-                        m_ct_sm.startGazing();
+                        // m_ct_sm.startGazing();
 
                         m_xStart = tf2pose(m_ur10_model.T_ef_0(current.q));
                         m_xGoal = m_xStart;
